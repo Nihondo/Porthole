@@ -90,7 +90,7 @@ struct PortholeWidgetView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
 
-                Text(entry.clipName ?? "Web Clip")
+                Text(entry.clipName ?? L10n.string("widget.defaultClipName"))
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.white)
@@ -108,12 +108,12 @@ struct PortholeWidgetView: View {
 
     private var placeholderView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Porthole", systemImage: "rectangle.inset.filled")
+            Label("Porthole", systemImage: "widget.large.badge.plus")
                 .font(.headline)
 
             Spacer(minLength: 0)
 
-            Text(entry.clipName ?? "No Clip")
+            Text(entry.clipName ?? L10n.string("widget.noClip"))
                 .font(family == .systemSmall ? .subheadline : .title3)
                 .fontWeight(.semibold)
                 .lineLimit(2)
@@ -127,12 +127,13 @@ struct PortholeWidgetView: View {
 
     private var statusText: String {
         if !entry.isAppGroupAvailable {
-            return "App Group unavailable"
+            return L10n.string("widget.appGroupUnavailable")
         }
         if entry.snapshotURL == nil {
-            return "\(entry.clipCount) clip(s) ready"
+            let key = entry.clipCount == 1 ? "widget.clipReady.one" : "widget.clipReady.other"
+            return L10n.format(key, entry.clipCount)
         }
-        return "Open the app and capture"
+        return L10n.string("widget.openAndCapture")
     }
 
     private var widgetURL: URL? {
@@ -164,8 +165,8 @@ struct PortholeWidget: Widget {
             PortholeWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Web Clip")
-        .description("Show a clipped region of any web page.")
+        .configurationDisplayName("widget.configuration.name")
+        .description("widget.configuration.description")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

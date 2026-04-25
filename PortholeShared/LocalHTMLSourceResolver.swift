@@ -94,7 +94,7 @@ enum LocalHTMLSourceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .staleBookmark:
-            return "ローカルHTMLの参照が古くなっています。ファイルを選択し直してください。"
+            return L10n.string("error.localHTMLStale")
         }
     }
 }

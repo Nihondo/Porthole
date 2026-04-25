@@ -15,9 +15,9 @@ enum EditorClipMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .rect:
-            return "矩形"
+            return L10n.string("editor.mode.rect")
         case .selector:
-            return "セレクタ"
+            return L10n.string("editor.mode.selector")
         }
     }
 }
@@ -33,9 +33,9 @@ enum EditorSourceKind: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .remote:
-            return "URL"
+            return L10n.string("editor.source.url")
         case .localHTML:
-            return "ローカルHTML"
+            return L10n.string("editor.source.localHTML")
         }
     }
 }
@@ -91,11 +91,11 @@ final class ClipEditorDraft: ObservableObject {
     /// 下書きから保存可能な Clip を生成します。
     func makeClip() -> Clip? {
         guard let clipId else {
-            validationMessage = "クリップが選択されていません"
+            validationMessage = L10n.string("editor.validation.noClip")
             return nil
         }
         guard clipMode == .rect || !normalizedSelector.isEmpty else {
-            validationMessage = "CSSセレクタを入力してください"
+            validationMessage = L10n.string("editor.validation.missingSelector")
             return nil
         }
         guard let source = makeSource() else { return nil }
@@ -153,7 +153,7 @@ final class ClipEditorDraft: ObservableObject {
 
     private var normalizedName: String {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedName.isEmpty ? "Untitled Clip" : trimmedName
+        return trimmedName.isEmpty ? L10n.string("editor.defaultUntitledClip") : trimmedName
     }
 
     private var normalizedSelector: String {
@@ -207,8 +207,8 @@ final class ClipEditorDraft: ObservableObject {
                 localHTMLPath = resolved.htmlURL.path
                 localAccessRootPath = resolved.accessRootURL.path
             } else {
-                localHTMLPath = "選択済みHTML"
-                localAccessRootPath = "選択済み読み取りルート"
+                localHTMLPath = L10n.string("editor.localHTML.selectedHTML")
+                localAccessRootPath = L10n.string("editor.localHTML.selectedRoot")
             }
         }
     }
@@ -217,13 +217,13 @@ final class ClipEditorDraft: ObservableObject {
         switch sourceKind {
         case .remote:
             guard let url = URL(string: urlString), url.scheme?.hasPrefix("http") == true else {
-                validationMessage = "有効なURLを入力してください"
+                validationMessage = L10n.string("editor.validation.invalidURL")
                 return nil
             }
             return .remote(url)
         case .localHTML:
             guard let localHTMLBookmark, let localAccessRootBookmark else {
-                validationMessage = "ローカルHTMLファイルを選択してください"
+                validationMessage = L10n.string("editor.validation.missingLocalHTML")
                 return nil
             }
             return .localBookmark(

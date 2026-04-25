@@ -1,2 +1,13 @@
-"widget.name" = "Web Clip";
-
+"app.name" = "Porthole";
+"widget.defaultClipName" = "Web Clip";
+"widget.noClip" = "クリップなし";
+"widget.appGroupUnavailable" = "App Group に接続できません";
+"widget.clipReady.one" = "%d件のクリップが準備済み";
+"widget.clipReady.other" = "%d件のクリップが準備済み";
+"widget.openAndCapture" = "アプリを開いて最新化";
+"widget.configuration.name" = "Web Clip";
+"widget.configuration.description" = "任意のWebページの一部を表示します。";
+"intent.clipEntity.type" = "クリップ";
+"intent.selectClip.title" = "クリップを選択";
+"intent.selectClip.description" = "ウィジェットに表示するWebクリップを選択します。";
+"intent.clip.parameter" = "クリップ";

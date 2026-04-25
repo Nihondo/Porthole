@@ -80,7 +80,7 @@ enum ClipStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .appGroupUnavailable:
-            return "App Group container is unavailable."
+            return L10n.string("error.appGroupUnavailable")
         }
     }
 }

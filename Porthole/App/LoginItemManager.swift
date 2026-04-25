@@ -43,9 +43,9 @@ final class LoginItemManager: ObservableObject {
         case .notRegistered, .enabled:
             return nil
         case .requiresApproval:
-            return "システム設定で承認が必要です"
+            return L10n.string("login.requiresApproval")
         case .notFound:
-            return "ログイン項目が見つかりません"
+            return L10n.string("login.notFound")
         @unknown default:
             return nil
         }

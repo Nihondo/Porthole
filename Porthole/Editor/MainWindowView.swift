@@ -50,7 +50,7 @@ struct MainWindowView: View {
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(PortholeTheme.heading)
 
-                Text("\(appState.clips.count) clips")
+                Text(clipCountText)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(PortholeTheme.muted)
             }
@@ -60,19 +60,25 @@ struct MainWindowView: View {
             .padding(.bottom, 12)
 
             ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(appState.clips) { clip in
-                        ClipSidebarRow(
-                            clip: clip,
-                            isSelected: clip.id == appState.selectedClipId,
-                            favicon: faviconStore.image(for: clip)
-                        ) {
-                            appState.selectedClipId = clip.id
+                if appState.clips.isEmpty {
+                    EmptySidebarState()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 24)
+                } else {
+                    LazyVStack(spacing: 8) {
+                        ForEach(appState.clips) { clip in
+                            ClipSidebarRow(
+                                clip: clip,
+                                isSelected: clip.id == appState.selectedClipId,
+                                favicon: faviconStore.image(for: clip)
+                            ) {
+                                appState.selectedClipId = clip.id
+                            }
                         }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
             }
 
             Divider()
@@ -81,14 +87,14 @@ struct MainWindowView: View {
                 Button {
                     appState.addClip()
                 } label: {
-                    Label("追加", systemImage: "plus")
+                    Label(L10n.string("editor.add"), systemImage: "plus")
                 }
                 .buttonStyle(.bordered)
 
                 Button {
                     appState.deleteSelectedClip()
                 } label: {
-                    Label("削除", systemImage: "trash")
+                    Label(L10n.string("editor.delete"), systemImage: "trash")
                 }
                 .buttonStyle(.borderless)
                 .disabled(appState.selectedClipId == nil)
@@ -100,26 +106,39 @@ struct MainWindowView: View {
         .background(PortholeTheme.sidebarBackground)
     }
 
+    private var clipCountText: String {
+        let key = appState.clips.count == 1 ? "editor.sidebar.count.one" : "editor.sidebar.count.other"
+        return L10n.format(key, appState.clips.count)
+    }
+
+    @ViewBuilder
     private var editorDetail: some View {
-        VStack(spacing: 0) {
-            editorToolbar
-
-            HSplitView {
-                formPane
-                    .frame(minWidth: 330, idealWidth: 380, maxWidth: 460)
-
-                previewPane
-                    .frame(minWidth: 460)
+        if selectedClip == nil {
+            EmptyDetailView {
+                appState.addClip()
             }
+            .background(PortholeTheme.windowBackground)
+        } else {
+            VStack(spacing: 0) {
+                editorToolbar
+
+                HSplitView {
+                    formPane
+                        .frame(minWidth: 330, idealWidth: 380, maxWidth: 460)
+
+                    previewPane
+                        .frame(minWidth: 460)
+                }
+            }
+            .background(PortholeTheme.windowBackground)
+            .navigationTitle("")
         }
-        .background(PortholeTheme.windowBackground)
-        .navigationTitle("")
     }
 
     private var editorToolbar: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(selectedClip?.name ?? "Web Clip")
+                Text(selectedClip?.name ?? L10n.string("editor.defaultTitle"))
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(PortholeTheme.onAccent)
                     .lineLimit(1)
@@ -139,14 +158,14 @@ struct MainWindowView: View {
             Button {
                 loadPreview()
             } label: {
-                Label("リロード", systemImage: "arrow.clockwise")
+                Label(L10n.string("editor.reload"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(.portholeSecondary)
 
             Button {
                 _ = saveDraft()
             } label: {
-                Label("設定を保存", systemImage: "square.and.arrow.down")
+                Label(L10n.string("editor.saveSettings"), systemImage: "square.and.arrow.down")
             }
             .buttonStyle(.portholePrimary)
 
@@ -155,7 +174,7 @@ struct MainWindowView: View {
                     appState.captureSelectedClip()
                 }
             } label: {
-                Label("クリップを最新化", systemImage: "camera.viewfinder")
+                Label(L10n.string("editor.refreshClip"), systemImage: "camera.viewfinder")
             }
             .buttonStyle(.portholeSecondary)
             .disabled(appState.isCapturingSnapshot)
@@ -173,16 +192,16 @@ struct MainWindowView: View {
     private var formPane: some View {
         ScrollView {
             VStack(spacing: 14) {
-                SettingsCard(title: "基本", systemImage: "slider.horizontal.3") {
+                SettingsCard(title: L10n.string("editor.section.basic"), systemImage: "slider.horizontal.3") {
                     VStack(spacing: 12) {
-                        FieldRow("名前") {
-                            TextField("名前", text: $draft.name)
+                        FieldRow(L10n.string("editor.field.name")) {
+                            TextField(L10n.string("editor.placeholder.name"), text: $draft.name)
                                 .textFieldStyle(.roundedBorder)
                         }
 
-                        FieldRow("読み込み元") {
+                        FieldRow(L10n.string("editor.field.source")) {
                             LeftAlignedControl {
-                                Picker("読み込み元", selection: $draft.sourceKind) {
+                                Picker(L10n.string("editor.field.source"), selection: $draft.sourceKind) {
                                     ForEach(EditorSourceKind.allCases) { sourceKind in
                                         Text(sourceKind.title).tag(sourceKind)
                                     }
@@ -193,8 +212,8 @@ struct MainWindowView: View {
                         }
 
                         if draft.sourceKind == .remote {
-                            FieldRow("URL") {
-                                TextField("https://example.com", text: $draft.urlString)
+                            FieldRow(L10n.string("editor.field.url")) {
+                                TextField(L10n.string("editor.placeholder.url"), text: $draft.urlString)
                                     .textFieldStyle(.roundedBorder)
                             }
                         } else {
@@ -202,20 +221,26 @@ struct MainWindowView: View {
                                 Button {
                                     selectLocalHTML()
                                 } label: {
-                                    Label("HTMLを選択", systemImage: "doc.badge.plus")
+                                    Label(L10n.string("editor.selectHTML"), systemImage: "doc.badge.plus")
                                 }
                                 .buttonStyle(.portholeSecondary)
 
-                                PathValueRow(title: "HTML", value: draft.localHTMLPath.isEmpty ? "未選択" : draft.localHTMLPath)
-                                PathValueRow(title: "読み取りルート", value: draft.localAccessRootPath.isEmpty ? "未選択" : draft.localAccessRootPath)
+                                PathValueRow(
+                                    title: L10n.string("editor.htmlPath"),
+                                    value: draft.localHTMLPath.isEmpty ? L10n.string("editor.notSelected") : draft.localHTMLPath
+                                )
+                                PathValueRow(
+                                    title: L10n.string("editor.accessRootPath"),
+                                    value: draft.localAccessRootPath.isEmpty ? L10n.string("editor.notSelected") : draft.localAccessRootPath
+                                )
                             }
                         }
 
-                        FieldRow("更新間隔") {
+                        FieldRow(L10n.string("editor.field.refreshInterval")) {
                             HStack(spacing: 8) {
-                                TextField("秒", value: $draft.refreshSeconds, formatter: Self.integerFormatter)
+                                TextField(L10n.string("editor.seconds"), value: $draft.refreshSeconds, formatter: Self.integerFormatter)
                                     .textFieldStyle(.roundedBorder)
-                                Text("秒")
+                                Text(L10n.string("editor.seconds"))
                                     .font(.caption)
                                     .foregroundStyle(PortholeTheme.muted)
                             }
@@ -223,18 +248,18 @@ struct MainWindowView: View {
                     }
                 }
 
-                SettingsCard(title: "レンダリング", systemImage: "display") {
+                SettingsCard(title: L10n.string("editor.section.rendering"), systemImage: "display") {
                     HStack(spacing: 10) {
-                        MetricField(title: "Viewport 幅", value: $draft.viewportWidth)
-                        MetricField(title: "Viewport 高さ", value: $draft.viewportHeight)
+                        MetricField(title: L10n.string("editor.field.viewportWidth"), value: $draft.viewportWidth)
+                        MetricField(title: L10n.string("editor.field.viewportHeight"), value: $draft.viewportHeight)
                     }
                 }
 
-                SettingsCard(title: "クリッピング", systemImage: "crop") {
+                SettingsCard(title: L10n.string("editor.section.clipping"), systemImage: "crop") {
                     VStack(spacing: 12) {
-                        FieldRow("モード") {
+                        FieldRow(L10n.string("editor.field.mode")) {
                             LeftAlignedControl {
-                                Picker("モード", selection: $draft.clipMode) {
+                                Picker(L10n.string("editor.field.mode"), selection: $draft.clipMode) {
                                     ForEach(EditorClipMode.allCases) { mode in
                                         Text(mode.title).tag(mode)
                                     }
@@ -245,22 +270,22 @@ struct MainWindowView: View {
                         }
 
                         if draft.clipMode == .selector {
-                            FieldRow("セレクタ") {
-                                TextField("CSSセレクタ", text: $draft.selector)
+                            FieldRow(L10n.string("editor.field.selector")) {
+                                TextField(L10n.string("editor.placeholder.selector"), text: $draft.selector)
                                     .textFieldStyle(.roundedBorder)
                             }
                             HStack {
                                 Button {
                                     pickElement()
                                 } label: {
-                                    Label("要素を選択", systemImage: "scope")
+                                    Label(L10n.string("editor.selectElement"), systemImage: "scope")
                                 }
                                 .buttonStyle(.portholeSecondary)
                                 .disabled(previewStore.isPickingElement)
 
                                 Spacer()
 
-                                Text("フォールバック矩形も保存")
+                                Text(L10n.string("editor.saveFallbackRect"))
                                     .font(.caption2)
                                     .foregroundStyle(PortholeTheme.muted)
                             }
@@ -268,23 +293,28 @@ struct MainWindowView: View {
                     }
                 }
 
-                SettingsCard(title: draft.clipMode == .rect ? "矩形" : "フォールバック矩形", systemImage: "rectangle.dashed") {
+                SettingsCard(
+                    title: draft.clipMode == .rect
+                        ? L10n.string("editor.section.rect")
+                        : L10n.string("editor.section.fallbackRect"),
+                    systemImage: "rectangle.dashed"
+                ) {
                     VStack(spacing: 10) {
                         HStack(spacing: 10) {
-                            MetricField(title: "X", value: $draft.clipRect.x)
-                            MetricField(title: "Y", value: $draft.clipRect.y)
+                            MetricField(title: L10n.string("editor.field.rectX"), value: $draft.clipRect.x)
+                            MetricField(title: L10n.string("editor.field.rectY"), value: $draft.clipRect.y)
                         }
                         HStack(spacing: 10) {
-                            MetricField(title: "幅", value: $draft.clipRect.width)
-                            MetricField(title: "高さ", value: $draft.clipRect.height)
+                            MetricField(title: L10n.string("editor.field.rectWidth"), value: $draft.clipRect.width)
+                            MetricField(title: L10n.string("editor.field.rectHeight"), value: $draft.clipRect.height)
                         }
                     }
                 }
 
                 if let selectedClip, let lastUpdated = selectedClip.lastUpdated {
-                    SettingsCard(title: "状態", systemImage: "clock") {
+                    SettingsCard(title: L10n.string("editor.section.status"), systemImage: "clock") {
                         PathValueRow(
-                            title: "最終撮影",
+                            title: L10n.string("editor.field.lastCaptured"),
                             value: lastUpdated.formatted(date: .abbreviated, time: .standard)
                         )
                     }
@@ -303,7 +333,7 @@ struct MainWindowView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("プレビュー")
+                    Text(L10n.string("editor.preview"))
                         .font(.headline)
                         .foregroundStyle(PortholeTheme.heading)
                     Text("\(Int(viewportSize.width)) × \(Int(viewportSize.height))")
@@ -355,7 +385,7 @@ struct MainWindowView: View {
                 )
 
             if previewStore.isPickingElement {
-                Text("クリックして選択")
+                Text(L10n.string("editor.clickToSelect"))
                     .font(.caption)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
@@ -425,8 +455,8 @@ struct MainWindowView: View {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.html]
-        panel.message = "ウィジェットに表示するローカルHTMLを選択してください"
-        panel.prompt = "選択"
+        panel.message = L10n.string("editor.localHTMLPanel.message")
+        panel.prompt = L10n.string("editor.localHTMLPanel.prompt")
 
         guard panel.runModal() == .OK, let htmlURL = panel.url else { return }
 
@@ -549,6 +579,59 @@ private struct ClipSidebarRow: View {
             .shadow(color: isSelected ? PortholeTheme.shadow : .clear, radius: 8, y: 3)
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct EmptySidebarState: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "rectangle.dashed")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(PortholeTheme.accent)
+            Text(L10n.string("editor.sidebar.empty.title"))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(PortholeTheme.heading)
+            Text(L10n.string("editor.sidebar.empty.message"))
+                .font(.caption)
+                .foregroundStyle(PortholeTheme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(PortholeTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(PortholeTheme.border, lineWidth: 1)
+        }
+    }
+}
+
+private struct EmptyDetailView: View {
+    let addAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "widget.large.badge.plus")
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(PortholeTheme.accent)
+            Text(L10n.string("editor.emptyDetail.title"))
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(PortholeTheme.heading)
+            Text(L10n.string("editor.emptyDetail.message"))
+                .font(.callout)
+                .foregroundStyle(PortholeTheme.muted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+            Button {
+                addAction()
+            } label: {
+                Label(L10n.string("editor.add"), systemImage: "plus")
+            }
+            .buttonStyle(.portholePrimary)
+            .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -725,7 +808,7 @@ private extension Clip {
                 htmlBookmark: htmlBookmark,
                 accessRootBookmark: accessRootBookmark
             ) else {
-                return "Local HTML"
+                return L10n.string("editor.localHTML.label")
             }
             return resolved.htmlURL.lastPathComponent
         }

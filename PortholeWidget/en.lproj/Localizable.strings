@@ -1,2 +1,13 @@
-"widget.name" = "Web Clip";
-
+"app.name" = "Porthole";
+"widget.defaultClipName" = "Web Clip";
+"widget.noClip" = "No Clip";
+"widget.appGroupUnavailable" = "App Group unavailable";
+"widget.clipReady.one" = "%d clip ready";
+"widget.clipReady.other" = "%d clips ready";
+"widget.openAndCapture" = "Open the app and refresh";
+"widget.configuration.name" = "Web Clip";
+"widget.configuration.description" = "Show a clipped region of any web page.";
+"intent.clipEntity.type" = "Clip";
+"intent.selectClip.title" = "Select Clip";
+"intent.selectClip.description" = "Choose the web clip to show in the widget.";
+"intent.clip.parameter" = "Clip";

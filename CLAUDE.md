@@ -4,7 +4,7 @@ Porthole is a macOS menu bar app that captures web clip snapshots in the main ap
 
 ## Current State
 
-The project is after M8 action removal:
+The project is at the M9 localization and polish stage:
 
 - `Porthole` app target
 - `PortholeShared` shared Swift files compiled into app and widget targets
@@ -18,7 +18,7 @@ The project is after M8 action removal:
 - Local HTML clips store security-scoped bookmarks for the HTML file and read-access root.
 - The editor embeds a `WKWebView` preview with a draggable/resizable rectangle overlay and a click-to-select element picker.
 - Selector clips are saved as `.selectorWithFallbackRect`, preserving the current rectangle as fallback.
-- The settings window and menu bar include "Capture Now".
+- The menu bar includes Settings, Refresh Clip, Open at Login, About, and Quit.
 - `SnapshotCapturer` loads remote clips with `URLRequest` and local HTML clips with `WKWebView.loadFileURL(_:allowingReadAccessTo:)`, captures the configured rect, writes small / medium / large PNGs, updates `lastUpdated`, and reloads widget timelines.
 - `RefreshScheduler` schedules the next due clip from `lastUpdated + refreshSeconds` while the app is running.
 - The app captures stale clips on launch and after `NSWorkspace.didWakeNotification`.
@@ -27,6 +27,9 @@ The project is after M8 action removal:
 - The widget timeline policy uses the selected clip's `refreshSeconds`.
 - The widget click URL is the remote clip's source URL, so clicking a remote clip opens it in the default browser.
 - Widget button actions and App Intent request queues were removed because they made the feature too complex.
+- User-facing app and widget strings are localized in English and Japanese.
+- The settings UI includes explicit empty states when no clips exist.
+- `README.md` is English and `README_ja.md` is Japanese.
 
 ## Build
 
@@ -44,8 +47,8 @@ DEVELOPMENT_TEAM = <YOUR_TEAM_ID>
 
 ## Next Milestone
 
-M9 should add localization and polish:
+Post-M9 work should focus on release hardening:
 
-- Fill in Japanese/English localization coverage.
-- Improve empty states and error messages.
-- Review README and user-facing behavior for the first usable release.
+- Manual QA for English and Japanese UI in both app and widget.
+- Signed run verification with App Group and login item behavior.
+- Packaging and release notes.

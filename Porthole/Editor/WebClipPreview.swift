@@ -333,11 +333,11 @@ enum WebClipPreviewError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyPicking:
-            return "Element picker is already active."
+            return L10n.string("error.pickerActive")
         case .invalidSelection:
-            return "Could not read the selected element."
+            return L10n.string("error.pickerSelectionUnreadable")
         case let .timeout(operationName):
-            return "Timed out while waiting for \(operationName)."
+            return L10n.format("error.timeout", operationName)
         }
     }
 }

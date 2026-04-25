@@ -6,7 +6,7 @@ import Foundation
 
 /// Widget編集画面で選択できるクリップのAppEntityです。
 struct ClipEntity: AppEntity {
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Clip")
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "intent.clipEntity.type")
     static var defaultQuery = ClipEntityQuery()
 
     let id: String
@@ -55,10 +55,10 @@ struct ClipEntityQuery: EntityQuery {
 
 /// Porthole Widgetで表示対象クリップを選ぶ設定Intentです。
 struct SelectClipIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Select Clip"
-    static var description = IntentDescription("Choose the web clip to show in the widget.")
+    static var title: LocalizedStringResource = "intent.selectClip.title"
+    static var description = IntentDescription("intent.selectClip.description")
 
-    @Parameter(title: "Clip")
+    @Parameter(title: "intent.clip.parameter")
     var clip: ClipEntity?
 
     init() {}
@@ -67,4 +67,3 @@ struct SelectClipIntent: WidgetConfigurationIntent {
         self.clip = clip
     }
 }
-

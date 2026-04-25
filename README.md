@@ -1,46 +1,55 @@
 # Porthole
 
-Porthole は、任意のWebページやローカルHTMLの一部分をmacOSウィジェットへ表示するためのメニューバー常駐アプリです。
+Porthole is a macOS menu bar app that captures part of any web page or local HTML file and displays it in a macOS widget.
 
-現在は M8 アクション削除後のシンプルなWidget表示段階です。
+## Current State
 
-- 本体アプリ、共有Swift、Widget拡張の3領域を作成済み
+Porthole is at the M9 localization and polish stage.
+
+- App target, shared Swift files, and Widget extension are set up.
 - App Group: `group.com.dmng.porthole`
 - Bundle ID: `com.dmng.porthole.Porthole` / `com.dmng.porthole.Porthole.PortholeWidget`
-- 本体アプリは初回起動時にサンプルクリップを作成
-- 設定画面でクリップの追加・削除・選択が可能
-- 名前、読み込み元、viewport、更新間隔、矩形座標を編集して `registry.json` に保存
-- 読み込み元は remote URL とローカルHTMLを選択可能
-- ローカルHTMLは `NSOpenPanel` で選択し、security-scoped bookmark として保存
-- 埋め込み `WKWebView` プレビュー上で矩形をドラッグ移動・右下ハンドルでリサイズ
-- クリッピング方式を矩形 / CSSセレクタで切り替え可能
-- プレビュー上の要素をクリックしてCSSセレクタを取得可能
-- メニューまたは設定画面の「クリップを最新化」で選択中の remote URL / ローカルHTML クリップを `WKWebView` で撮影
-- メニューからログイン時起動を切り替え可能
-- App Group の `snapshots/` へ small / medium / large PNG を保存
-- 本体アプリ起動中は `refreshSeconds` に基づいて定期撮影
-- アプリ起動時とシステム復帰時に、最終更新から更新間隔を超えたクリップを再撮影
-- Widget編集画面で表示対象クリップを選択可能
-- Widget は選択クリップのPNGがあれば画像表示し、未撮影時はプレースホルダーを表示
-- Widget の timeline policy は選択クリップの更新間隔に合わせて再読み込み
-- remote URL クリップのWidgetをクリックすると、デフォルトブラウザで元URLを開く
+- The app creates a sample clip on first launch.
+- The settings window supports adding, deleting, selecting, editing, and saving clips.
+- Editable settings include name, source, viewport, refresh interval, clipping mode, rectangle, and CSS selector.
+- Sources can be remote URLs or local HTML files.
+- Local HTML files are selected through `NSOpenPanel` and stored as security-scoped bookmarks.
+- The embedded `WKWebView` preview supports draggable rectangle clipping and click-to-select CSS selector capture.
+- Use **Refresh Clip** from the menu or settings window to capture the selected remote URL / local HTML clip with `WKWebView`.
+- The app writes small / medium / large PNG snapshots into the App Group `snapshots/` directory.
+- While the app is running, clips refresh on their configured `refreshSeconds` interval.
+- Stale clips are refreshed on app launch and after system wake.
+- Widgets can choose the clip to display in the widget edit UI.
+- The widget displays a PNG snapshot when available and a localized placeholder when not yet captured.
+- The widget timeline policy follows the selected clip refresh interval.
+- Clicking a remote URL clip widget opens the source URL in the default browser.
+- The menu can toggle whether Porthole opens at login.
+- User-facing app and widget strings are localized in English and Japanese.
 
-## ビルド
+## Menu
 
-署名なしのローカル確認:
+- **Porthole Settings...** opens the settings window.
+- **Refresh Clip** captures the currently selected saved clip and updates the widget PNGs.
+- **Open at Login** toggles the macOS login item.
+- **About Porthole...** opens the standard About panel.
+- **Quit** terminates the app.
+
+## Build
+
+Use a writable DerivedData path for local verification:
 
 ```sh
 rtk xcodebuild -project Porthole.xcodeproj -scheme Porthole -destination 'platform=macOS' -derivedDataPath /tmp/PortholeDerived CODE_SIGNING_ALLOWED=NO build
 ```
 
-実機で App Group を使って動かす場合は、`Configurations/DevelopmentTeam.local.xcconfig` を作成し、Apple Developer Team ID を設定してください。
+For signed local runs with App Group support, create `Configurations/DevelopmentTeam.local.xcconfig` and set your Apple Developer Team ID:
 
 ```xcconfig
 DEVELOPMENT_TEAM = <YOUR_TEAM_ID>
 ```
 
-## 制約
+## Limitations
 
-WidgetKit の制約により、ウィジェット内で `WKWebView` はホストできません。本体アプリがPNGスナップショットを作成し、ウィジェットはその画像を表示します。本体アプリが起動していない間、スナップショットは更新されません。
+WidgetKit cannot host `WKWebView` inside a widget. Porthole therefore captures PNG snapshots in the main app and the widget renders those images. Snapshots are not refreshed while the main app is not running.
 
-M8後の方針として、Widget上のボタンアクションや擬似操作は削除しています。WidgetKit の制約により、ウィジェット内で `WKWebView` はホストできません。本体アプリがPNGスナップショットを作成し、ウィジェットはその画像を表示します。remote URL クリップのWidgetクリック時はデフォルトブラウザで元URLを開きます。
+Widget button actions and simulated interactions were removed after M8 to keep the feature set focused. Remote URL widgets open the source URL in the default browser when clicked.

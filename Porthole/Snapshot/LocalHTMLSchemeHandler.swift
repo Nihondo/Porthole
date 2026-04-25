@@ -110,11 +110,11 @@ enum LocalHTMLSchemeError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noAccessRoot:
-            return "読み取りルートURLが設定されていません。"
+            return L10n.string("error.schemeMissingRoot")
         case .invalidURL:
-            return "スキームリクエストのURLが無効です。"
+            return L10n.string("error.schemeInvalidURL")
         case let .accessDenied(path):
-            return "読み取りルート外へのアクセスが拒否されました: \(path)"
+            return L10n.format("error.schemeAccessDenied", path)
         }
     }
 }

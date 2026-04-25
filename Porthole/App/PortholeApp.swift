@@ -35,7 +35,7 @@ final class AppState: ObservableObject {
 
     @Published var clips: [Clip] = []
     @Published var selectedClipId: UUID?
-    @Published var statusMessage = "起動中"
+    @Published var statusMessage = L10n.string("status.launching")
     @Published var isSettingsWindowRequested = false
     @Published var isCapturingSnapshot = false
 
@@ -53,11 +53,13 @@ final class AppState: ObservableObject {
             try ClipStore.shared.seedSampleClipIfNeeded()
             clips = try ClipStore.shared.loadClips()
             selectedClipId = selectedClipId ?? clips.first?.id
-            statusMessage = ClipStore.shared.isAppGroupAvailable ? "App Group 接続済み" : "App Group 未接続"
+            statusMessage = ClipStore.shared.isAppGroupAvailable
+                ? L10n.string("status.appGroup.connected")
+                : L10n.string("status.appGroup.unavailable")
             configureRefreshScheduler()
             refreshStaleClips(reason: .launch)
         } catch {
-            statusMessage = "初期化エラー: \(error.localizedDescription)"
+            statusMessage = L10n.format("status.initializationError", error.localizedDescription)
         }
     }
 
@@ -65,7 +67,7 @@ final class AppState: ObservableObject {
     func captureSelectedClip() {
         guard !isCapturingSnapshot else { return }
         guard let clip = clips.first(where: { $0.id == selectedClipId }) ?? clips.first else {
-            statusMessage = "撮影対象のクリップがありません"
+            statusMessage = L10n.string("status.noCaptureTarget")
             return
         }
 
@@ -116,7 +118,7 @@ final class AppState: ObservableObject {
             guard captureID == currentCaptureID else { return }
             captureTask?.cancel()
             snapshotCapturer.cancelCapture()
-            statusMessage = "撮影エラー: Timed out while waiting for capture."
+            statusMessage = L10n.string("status.captureTimeout")
             isCapturingSnapshot = false
             captureTask = nil
             captureID = nil
@@ -159,10 +161,10 @@ final class AppState: ObservableObject {
             try ClipStore.shared.saveClips(clips)
             WidgetCenter.shared.reloadTimelines(ofKind: PortholeKind.id)
             configureRefreshScheduler()
-            statusMessage = "保存しました"
+            statusMessage = L10n.string("status.saved")
             return true
         } catch {
-            statusMessage = "保存エラー: \(error.localizedDescription)"
+            statusMessage = L10n.format("status.saveError", error.localizedDescription)
             return false
         }
     }
@@ -252,39 +254,39 @@ private enum CaptureReason {
     var capturingMessage: String {
         switch self {
         case .launch:
-            return "起動時更新中"
+            return L10n.string("status.launch.capturing")
         case .manual:
-            return "撮影中"
+            return L10n.string("status.manual.capturing")
         case .scheduled:
-            return "定期更新中"
+            return L10n.string("status.scheduled.capturing")
         case .wake:
-            return "復帰後更新中"
+            return L10n.string("status.wake.capturing")
         }
     }
 
     var completedMessage: String {
         switch self {
         case .launch:
-            return "起動時更新完了"
+            return L10n.string("status.launch.completed")
         case .manual:
-            return "撮影完了"
+            return L10n.string("status.manual.completed")
         case .scheduled:
-            return "定期更新完了"
+            return L10n.string("status.scheduled.completed")
         case .wake:
-            return "復帰後更新完了"
+            return L10n.string("status.wake.completed")
         }
     }
 
     var errorMessage: String {
         switch self {
         case .launch:
-            return "起動時更新エラー"
+            return L10n.string("status.launch.error")
         case .manual:
-            return "撮影エラー"
+            return L10n.string("status.manual.error")
         case .scheduled:
-            return "定期更新エラー"
+            return L10n.string("status.scheduled.error")
         case .wake:
-            return "復帰後更新エラー"
+            return L10n.string("status.wake.error")
         }
     }
 }
@@ -361,17 +363,17 @@ private struct MenuBarContentView: View {
             openWindow(id: WindowId.settings)
             NSApp.activate(ignoringOtherApps: true)
         } label: {
-            Label("Porthole 設定...", systemImage: "gearshape")
+            Label(L10n.string("menu.settings"), systemImage: "gearshape")
         }
         Button {
             appState.captureSelectedClip()
         } label: {
-            Label("クリップを最新化", systemImage: "arrow.clockwise")
+            Label(L10n.string("menu.refreshClip"), systemImage: "arrow.clockwise")
         }
-        .disabled(appState.isCapturingSnapshot)
+        .disabled(appState.isCapturingSnapshot || appState.clips.isEmpty)
         Divider()
         Toggle(
-            "ログイン時にアプリを起動",
+            L10n.string("menu.launchAtLogin"),
             isOn: Binding(
                 get: { loginItemManager.isEnabled },
                 set: { loginItemManager.setEnabled($0) }
@@ -381,13 +383,13 @@ private struct MenuBarContentView: View {
         Button {
             presentAboutPanel()
         } label: {
-            Label("Porthole について...", systemImage: "info.circle")
+            Label(L10n.string("menu.about"), systemImage: "info.circle")
         }
         Divider()
         Button {
             NSApp.terminate(nil)
         } label: {
-            Label("終了", systemImage: "power")
+            Label(L10n.string("menu.quit"), systemImage: "power")
         }
         .onAppear {
             loginItemManager.updateStatus()
@@ -421,6 +423,6 @@ private struct MenuBarContentView: View {
            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return value
         }
-        return "Copyright © 2026 Nihondo"
+        return L10n.string("app.copyright")
     }
 }

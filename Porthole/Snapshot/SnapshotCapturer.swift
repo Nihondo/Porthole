@@ -532,21 +532,21 @@ enum SnapshotCaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .appGroupUnavailable:
-            return "App Group container is unavailable."
+            return L10n.string("error.appGroupUnavailable")
         case .cancelledNavigation:
-            return "Previous navigation was cancelled."
+            return L10n.string("error.navigationCancelled")
         case .emptySnapshot:
-            return "WKWebView returned an empty snapshot."
+            return L10n.string("error.emptySnapshot")
         case .jsonEncodingFailed:
-            return "Failed to encode JavaScript input."
+            return L10n.string("error.javascriptInputEncoding")
         case .pngEncodingFailed:
-            return "Failed to encode snapshot as PNG."
+            return L10n.string("error.pngEncoding")
         case let .selectorNotFound(selector):
-            return "Selector was not found: \(selector)"
+            return L10n.format("error.selectorNotFound", selector)
         case let .timeout(operationName):
-            return "Timed out while waiting for \(operationName)."
+            return L10n.format("error.timeout", operationName)
         case .unsupportedSource:
-            return "This clip source is not supported."
+            return L10n.string("error.unsupportedSource")
         }
     }
 }
