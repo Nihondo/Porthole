@@ -1,0 +1,9 @@
+Configurations/DevelopmentTeam.local.xcconfig
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+.DS_Store
+docs/
+handoff.md
+.*/
