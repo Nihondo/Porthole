@@ -2,6 +2,7 @@
 // Captures clipped WKWebView snapshots and writes widget PNGs.
 
 import AppKit
+import CoreImage
 import Foundation
 import WebKit
 import WidgetKit
@@ -64,6 +65,7 @@ final class SnapshotCapturer {
 
         var updatedClip = clip
         updatedClip.lastUpdated = Date()
+        updatedClip.dominantColor = extractDominantColor(from: image)
         WidgetCenter.shared.reloadTimelines(ofKind: PortholeKind.id)
         return updatedClip
     }
@@ -322,6 +324,32 @@ final class SnapshotCapturer {
                 continuation.resume(returning: image)
             }
         }
+    }
+
+    /// 画像全体の平均色をドミナントカラーとして抽出します。
+    private func extractDominantColor(from image: NSImage) -> ClipColor? {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let ciImage = CIImage(cgImage: cgImage)
+        guard let filter = CIFilter(name: "CIAreaAverage", parameters: [
+            kCIInputImageKey: ciImage,
+            kCIInputExtentKey: CIVector(cgRect: ciImage.extent)
+        ]), let outputImage = filter.outputImage else { return nil }
+
+        var bitmap = [UInt8](repeating: 0, count: 4)
+        let context = CIContext(options: [.workingColorSpace: NSNull()])
+        context.render(
+            outputImage,
+            toBitmap: &bitmap,
+            rowBytes: 4,
+            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+            format: .RGBA8,
+            colorSpace: CGColorSpaceCreateDeviceRGB()
+        )
+        return ClipColor(
+            red: Double(bitmap[0]) / 255.0,
+            green: Double(bitmap[1]) / 255.0,
+            blue: Double(bitmap[2]) / 255.0
+        )
     }
 
     private func saveFamilySnapshots(from image: NSImage, clipId: UUID) throws {

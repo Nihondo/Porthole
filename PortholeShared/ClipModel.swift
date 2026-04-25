@@ -13,6 +13,7 @@ struct Clip: Codable, Identifiable, Hashable {
     var renderViewport: CGSize
     var refreshSeconds: TimeInterval
     var lastUpdated: Date?
+    var dominantColor: ClipColor?
 
     /// 初期表示と疎通確認に使う最小サンプルを作成します。
     static func makeSampleClip() -> Clip {
@@ -60,4 +61,11 @@ struct ClipRect: Codable, Hashable {
     var y: CGFloat
     var width: CGFloat
     var height: CGFloat
+}
+
+/// スナップショットから抽出したドミナントカラーです。
+struct ClipColor: Codable, Hashable {
+    var red: Double
+    var green: Double
+    var blue: Double
 }

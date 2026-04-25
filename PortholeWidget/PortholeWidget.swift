@@ -17,6 +17,7 @@ struct PortholeEntry: TimelineEntry {
     let sourceURL: URL?
     let refreshSeconds: TimeInterval
     let isAppGroupAvailable: Bool
+    let dominantColor: ClipColor?
 }
 
 /// App Group の registry.json を読み込むタイムラインプロバイダです。
@@ -31,7 +32,8 @@ struct PortholeTimelineProvider: AppIntentTimelineProvider {
             snapshotURL: nil,
             sourceURL: URL(string: "https://www.apple.com/jp/"),
             refreshSeconds: 1800,
-            isAppGroupAvailable: true
+            isAppGroupAvailable: true,
+            dominantColor: nil
         )
     }
 
@@ -64,7 +66,8 @@ struct PortholeTimelineProvider: AppIntentTimelineProvider {
             snapshotURL: snapshotURL,
             sourceURL: clip?.remoteSourceURL,
             refreshSeconds: clip?.refreshSeconds ?? 15 * 60,
-            isAppGroupAvailable: ClipStore.shared.isAppGroupAvailable
+            isAppGroupAvailable: ClipStore.shared.isAppGroupAvailable,
+            dominantColor: clip?.dominantColor
         )
     }
 }
@@ -163,7 +166,13 @@ struct PortholeWidget: Widget {
             provider: PortholeTimelineProvider()
         ) { entry in
             PortholeWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) {
+                    if let color = entry.dominantColor {
+                        Color(red: color.red, green: color.green, blue: color.blue)
+                    } else {
+                        Color(nsColor: .windowBackgroundColor)
+                    }
+                }
         }
         .configurationDisplayName("widget.configuration.name")
         .description("widget.configuration.description")

@@ -1,55 +1,97 @@
 # Porthole
 
-Porthole is a macOS menu bar app that captures part of any web page or local HTML file and displays it in a macOS widget.
+Porthole is a macOS menu bar app that captures a region of any web page or local HTML file and displays it as a macOS Notification Center widget.
 
-## Current State
+## Quick Start
 
-Porthole is at the M9 localization and polish stage.
+1. Launch Porthole. A sample clip is created automatically on first launch.
+2. Open **Porthole Settings...** from the menu bar.
+3. Select the sample clip (or add a new one with **+**).
+4. Set a **Source** URL or choose a **Local HTML** file.
+5. Drag the rectangle overlay in the preview to define the region to capture.
+6. Click **Save Settings**, then **Refresh Clip** to take the first snapshot.
+7. Add a **Web Clip** widget in Notification Center and choose your clip.
 
-- App target, shared Swift files, and Widget extension are set up.
-- App Group: `group.com.dmng.porthole`
-- Bundle ID: `com.dmng.porthole.Porthole` / `com.dmng.porthole.Porthole.PortholeWidget`
-- The app creates a sample clip on first launch.
-- The settings window supports adding, deleting, selecting, editing, and saving clips.
-- Editable settings include name, source, viewport, refresh interval, clipping mode, rectangle, and CSS selector.
-- Sources can be remote URLs or local HTML files.
-- Local HTML files are selected through `NSOpenPanel` and stored as security-scoped bookmarks.
-- The embedded `WKWebView` preview supports draggable rectangle clipping and click-to-select CSS selector capture.
-- Use **Refresh Clip** from the menu or settings window to capture the selected remote URL / local HTML clip with `WKWebView`.
-- The app writes small / medium / large PNG snapshots into the App Group `snapshots/` directory.
-- While the app is running, clips refresh on their configured `refreshSeconds` interval.
-- Stale clips are refreshed on app launch and after system wake.
-- Widgets can choose the clip to display in the widget edit UI.
-- The widget displays a PNG snapshot when available and a localized placeholder when not yet captured.
-- The widget timeline policy follows the selected clip refresh interval.
-- Clicking a remote URL clip widget opens the source URL in the default browser.
-- The menu can toggle whether Porthole opens at login.
-- User-facing app and widget strings are localized in English and Japanese.
+## Menu Bar
 
-## Menu
+| Item | Description |
+|---|---|
+| **Porthole Settings...** | Open the settings window |
+| **Refresh Clip** | Capture the selected clip and update widget images |
+| **Open at Login** | Toggle the macOS login item |
+| **About Porthole...** | Open the standard About panel |
+| **Quit** | Quit the app |
 
-- **Porthole Settings...** opens the settings window.
-- **Refresh Clip** captures the currently selected saved clip and updates the widget PNGs.
-- **Open at Login** toggles the macOS login item.
-- **About Porthole...** opens the standard About panel.
-- **Quit** terminates the app.
+## Settings Window
 
-## Build
+### Clip List (sidebar)
+- **+** — Add a new clip
+- **−** — Delete the selected clip
+- Click a clip to select and edit it
 
-Use a writable DerivedData path for local verification:
+### Basic
+| Field | Description |
+|---|---|
+| **Name** | Display name shown in the widget picker |
+| **Source** | `URL` for a remote web page, `Local HTML` for a local file |
+| **URL** | Page URL (remote clips only) |
+| **Refresh Interval** | How often the clip is automatically re-captured (in seconds) |
 
-```sh
-rtk xcodebuild -project Porthole.xcodeproj -scheme Porthole -destination 'platform=macOS' -derivedDataPath /tmp/PortholeDerived CODE_SIGNING_ALLOWED=NO build
-```
+### Rendering
+| Field | Description |
+|---|---|
+| **Viewport Width / Height** | Browser viewport size used when rendering the page |
 
-For signed local runs with App Group support, create `Configurations/DevelopmentTeam.local.xcconfig` and set your Apple Developer Team ID:
+### Clipping
+| Field | Description |
+|---|---|
+| **Mode** | `Rectangle` captures a fixed region; `Selector` targets a CSS element |
+| **Selector** | CSS selector for the element to capture (Selector mode only) |
+| **Fallback Rectangle** | Rectangle used when the selector is not found |
 
-```xcconfig
-DEVELOPMENT_TEAM = <YOUR_TEAM_ID>
-```
+### Rectangle
+Drag the overlay in the **Preview** pane to set the capture region, or enter **X / Y / Width / Height** values directly.
 
-## Limitations
+### Preview
+- **Reload** — Reload the preview web view
+- **Select Element** — Click any element in the preview to auto-fill the CSS selector
+- **Save Settings** — Save the current clip settings
+- **Refresh Clip** — Capture a new snapshot immediately
 
-WidgetKit cannot host `WKWebView` inside a widget. Porthole therefore captures PNG snapshots in the main app and the widget renders those images. Snapshots are not refreshed while the main app is not running.
+## Clipping Modes
 
-Widget button actions and simulated interactions were removed after M8 to keep the feature set focused. Remote URL widgets open the source URL in the default browser when clicked.
+### Rectangle
+Captures the exact pixel region defined by the X / Y / Width / Height fields. Drag the rectangle in the preview to reposition it, or drag the bottom-right handle to resize.
+
+### Selector
+Captures the bounding box of the first element that matches the CSS selector. Use **Select Element** to pick an element from the preview. The rectangle is saved as a fallback for when the element is not found.
+
+## Local HTML Files
+1. Set **Source** to `Local HTML`.
+2. Click **Choose HTML** to select the HTML file via the file picker.
+3. Optionally set a **Read Access Root** to allow the page to load relative assets.
+4. The file path is stored as a security-scoped bookmark and does not need to be re-selected after relaunching the app.
+
+## Widgets
+
+Add a **Web Clip** widget in Notification Center (macOS Notification Center → Edit Widgets → search "Web Clip").
+
+- **Small / Medium / Large** sizes are all supported.
+- Tap the widget configuration to choose which clip to display.
+- A remote URL clip opens the source page in the default browser when clicked.
+- The widget shows a placeholder when no snapshot has been captured yet.
+- The timeline refreshes at the interval configured for the selected clip.
+
+## Automatic Refresh
+
+- While the app is running, each clip is re-captured at its configured **Refresh Interval**.
+- Clips that have not been updated within their interval are re-captured on app launch and after the Mac wakes from sleep.
+- Snapshots are not refreshed while the app is not running.
+
+## Notes / Troubleshooting
+
+- **Widget shows placeholder** — Open the app and use **Refresh Clip** to take the first snapshot.
+- **Local HTML reference is stale** — The file has moved or the bookmark expired. Re-select the file via **Choose HTML**.
+- **Selector not found** — The element was not present when the page loaded. Check the selector, or switch to Rectangle mode.
+- **Widget not updating** — macOS may throttle widget refresh. Open the app to trigger a manual capture.
+- **Login item requires approval** — macOS 13+ may require confirmation in System Settings → General → Login Items.
