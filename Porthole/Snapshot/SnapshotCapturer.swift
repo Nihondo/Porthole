@@ -2,7 +2,6 @@
 // Captures clipped WKWebView snapshots and writes widget PNGs.
 
 import AppKit
-import CoreImage
 import Foundation
 import WebKit
 import WidgetKit
@@ -326,30 +325,62 @@ final class SnapshotCapturer {
         }
     }
 
-    /// 画像全体の平均色をドミナントカラーとして抽出します。
+    /// スナップショット外周の代表色をウィジェット背景色として抽出します。
     private func extractDominantColor(from image: NSImage) -> ClipColor? {
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-        let ciImage = CIImage(cgImage: cgImage)
-        guard let filter = CIFilter(name: "CIAreaAverage", parameters: [
-            kCIInputImageKey: ciImage,
-            kCIInputExtentKey: CIVector(cgRect: ciImage.extent)
-        ]), let outputImage = filter.outputImage else { return nil }
+        guard let bitmap = makeBitmap(from: image) else { return nil }
 
-        var bitmap = [UInt8](repeating: 0, count: 4)
-        let context = CIContext(options: [.workingColorSpace: NSNull()])
-        context.render(
-            outputImage,
-            toBitmap: &bitmap,
-            rowBytes: 4,
-            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-            format: .RGBA8,
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+        let width = bitmap.pixelsWide
+        let height = bitmap.pixelsHigh
+        guard width > 0, height > 0 else { return nil }
+
+        let bandWidth = min(max(2, min(width, height) / 25), 16)
+        let sampleStride = max(1, min(width, height) / 160)
+        let sample = collectBoundarySample(
+            from: bitmap,
+            width: width,
+            height: height,
+            bandWidth: bandWidth,
+            sampleStride: sampleStride
         )
+        guard let bucket = sample.buckets.max(by: { $0.value.count < $1.value.count })?.value else {
+            return nil
+        }
+
         return ClipColor(
-            red: Double(bitmap[0]) / 255.0,
-            green: Double(bitmap[1]) / 255.0,
-            blue: Double(bitmap[2]) / 255.0
+            red: bucket.red / Double(bucket.count),
+            green: bucket.green / Double(bucket.count),
+            blue: bucket.blue / Double(bucket.count)
         )
+    }
+
+    private func makeBitmap(from image: NSImage) -> NSBitmapImageRep? {
+        guard let tiffData = image.tiffRepresentation else { return nil }
+        return NSBitmapImageRep(data: tiffData)
+    }
+
+    private func collectBoundarySample(
+        from bitmap: NSBitmapImageRep,
+        width: Int,
+        height: Int,
+        bandWidth: Int,
+        sampleStride: Int
+    ) -> BoundaryColorSample {
+        var sample = BoundaryColorSample()
+
+        for y in stride(from: 0, to: height, by: sampleStride) where y < bandWidth || y >= height - bandWidth {
+            sample.addRow(y, width: width, sampleStride: sampleStride, bitmap: bitmap)
+        }
+        for y in stride(from: bandWidth, to: max(bandWidth, height - bandWidth), by: sampleStride) {
+            sample.addColumnBand(
+                y,
+                width: width,
+                bandWidth: bandWidth,
+                sampleStride: sampleStride,
+                bitmap: bitmap
+            )
+        }
+
+        return sample
     }
 
     private func saveFamilySnapshots(from image: NSImage, clipId: UUID) throws {
@@ -410,6 +441,82 @@ final class SnapshotCapturer {
             return nil
         }
         return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
+}
+
+private struct BoundaryColorSample {
+    private(set) var buckets: [BoundaryColorBucket: BoundaryColorAccumulator] = [:]
+
+    mutating func addRow(
+        _ y: Int,
+        width: Int,
+        sampleStride: Int,
+        bitmap: NSBitmapImageRep
+    ) {
+        for x in stride(from: 0, to: width, by: sampleStride) {
+            addColor(atX: x, y: y, bitmap: bitmap)
+        }
+    }
+
+    mutating func addColumnBand(
+        _ y: Int,
+        width: Int,
+        bandWidth: Int,
+        sampleStride: Int,
+        bitmap: NSBitmapImageRep
+    ) {
+        for x in stride(from: 0, to: min(bandWidth, width), by: sampleStride) {
+            addColor(atX: x, y: y, bitmap: bitmap)
+        }
+        for x in stride(from: max(0, width - bandWidth), to: width, by: sampleStride) {
+            addColor(atX: x, y: y, bitmap: bitmap)
+        }
+    }
+
+    private mutating func addColor(atX x: Int, y: Int, bitmap: NSBitmapImageRep) {
+        guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+              color.alphaComponent >= 0.5 else {
+            return
+        }
+
+        let red = Double(color.redComponent)
+        let green = Double(color.greenComponent)
+        let blue = Double(color.blueComponent)
+        let key = BoundaryColorBucket(red: red, green: green, blue: blue)
+        buckets[key, default: BoundaryColorAccumulator()].add(red: red, green: green, blue: blue)
+    }
+}
+
+private struct BoundaryColorBucket: Hashable {
+    private static let bucketCount = 16.0
+
+    let red: Int
+    let green: Int
+    let blue: Int
+
+    init(red: Double, green: Double, blue: Double) {
+        self.red = Self.quantize(red)
+        self.green = Self.quantize(green)
+        self.blue = Self.quantize(blue)
+    }
+
+    private static func quantize(_ value: Double) -> Int {
+        let boundedValue = min(max(value, 0), 1)
+        return min(Int(boundedValue * bucketCount), Int(bucketCount) - 1)
+    }
+}
+
+private struct BoundaryColorAccumulator {
+    private(set) var red = 0.0
+    private(set) var green = 0.0
+    private(set) var blue = 0.0
+    private(set) var count = 0
+
+    mutating func add(red: Double, green: Double, blue: Double) {
+        self.red += red
+        self.green += green
+        self.blue += blue
+        count += 1
     }
 }
 

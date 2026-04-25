@@ -25,7 +25,7 @@ The project is at the M9 localization and polish stage:
 - `SelectClipIntent` and `ClipEntity` expose `ClipStore` clips to WidgetKit configuration.
 - The widget uses `AppIntentConfiguration`, renders the selected clip's family-specific PNG, and falls back to the first clip when no selection is configured.
 - The widget timeline policy uses the selected clip's `refreshSeconds`.
-- The widget click URL is the remote clip's source URL, so clicking a remote clip opens it in the default browser.
+- The widget click URL uses the `porthole://open-source/<clip-id>` deep link; the main app resolves the selected remote clip and opens its source URL in the default browser.
 - Widget button actions and App Intent request queues were removed because they made the feature too complex.
 - User-facing app and widget strings are localized in English and Japanese.
 - The settings UI includes explicit empty states when no clips exist.

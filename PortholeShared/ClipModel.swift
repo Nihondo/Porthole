@@ -63,7 +63,7 @@ struct ClipRect: Codable, Hashable {
     var height: CGFloat
 }
 
-/// スナップショットから抽出したドミナントカラーです。
+/// スナップショットから抽出したウィジェット背景用の代表色です。
 struct ClipColor: Codable, Hashable {
     var red: Double
     var green: Double

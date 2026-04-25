@@ -14,7 +14,6 @@ struct PortholeEntry: TimelineEntry {
     let clipCount: Int
     let lastUpdated: Date?
     let snapshotURL: URL?
-    let sourceURL: URL?
     let refreshSeconds: TimeInterval
     let isAppGroupAvailable: Bool
     let dominantColor: ClipColor?
@@ -30,7 +29,6 @@ struct PortholeTimelineProvider: AppIntentTimelineProvider {
             clipCount: 1,
             lastUpdated: Date(),
             snapshotURL: nil,
-            sourceURL: URL(string: "https://www.apple.com/jp/"),
             refreshSeconds: 1800,
             isAppGroupAvailable: true,
             dominantColor: nil
@@ -64,7 +62,6 @@ struct PortholeTimelineProvider: AppIntentTimelineProvider {
             clipCount: clips.count,
             lastUpdated: clip?.lastUpdated,
             snapshotURL: snapshotURL,
-            sourceURL: clip?.remoteSourceURL,
             refreshSeconds: clip?.refreshSeconds ?? 15 * 60,
             isAppGroupAvailable: ClipStore.shared.isAppGroupAvailable,
             dominantColor: clip?.dominantColor
@@ -140,20 +137,14 @@ struct PortholeWidgetView: View {
     }
 
     private var widgetURL: URL? {
-        entry.sourceURL
+        guard let clipId = entry.clipId else { return nil }
+        return URL(string: "porthole://open-source/\(clipId.uuidString)")
     }
 
     private func loadSnapshotImage() -> NSImage? {
         guard let snapshotURL = entry.snapshotURL else { return nil }
         guard FileManager.default.fileExists(atPath: snapshotURL.path) else { return nil }
         return NSImage(contentsOf: snapshotURL)
-    }
-}
-
-private extension Clip {
-    var remoteSourceURL: URL? {
-        guard case let .remote(url) = source else { return nil }
-        return url
     }
 }
 

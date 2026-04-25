@@ -22,9 +22,26 @@ enum URLRouter {
             NSApp.activate(ignoringOtherApps: true)
             AppState.shared.selectedClipId = UUID(uuidString: clipId)
             AppState.shared.isSettingsWindowRequested = true
+        case "open-source":
+            openSourceURL(from: url)
         default:
             break
         }
+    }
+
+    /// クリップIDからremote source URLを解決し、既定ブラウザで開きます。
+    @MainActor
+    private static func openSourceURL(from url: URL) {
+        guard let clipId = makeClipID(from: url) else { return }
+        guard let clip = try? ClipStore.shared.loadClips().first(where: { $0.id == clipId }) else { return }
+        guard case let .remote(sourceURL) = clip.source else { return }
+        NSWorkspace.shared.open(sourceURL)
+    }
+
+    /// ディープリンクのパスからクリップIDを取り出します。
+    private static func makeClipID(from url: URL) -> UUID? {
+        let clipId = url.pathComponents.dropFirst().first ?? ""
+        return UUID(uuidString: clipId)
     }
 }
 
