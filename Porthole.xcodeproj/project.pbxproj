@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		423375342F9D0F0E0009F0F9 /* porthole.icon in Resources */ = {isa = PBXBuildFile; fileRef = 423375332F9D0F0E0009F0F9 /* porthole.icon */; };
+		423375352F9D0F0E0009F0F9 /* porthole.icon in Resources */ = {isa = PBXBuildFile; fileRef = 423375332F9D0F0E0009F0F9 /* porthole.icon */; };
 		8A10003A2EF7000000A00001 /* PortholeWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A1000152EF7000000A00001 /* PortholeWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8A10003B2EF7000000A00001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1000172EF7000000A00001 /* WidgetKit.framework */; };
 		8A10003C2EF7000000A00001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1000182EF7000000A00001 /* SwiftUI.framework */; };
@@ -37,6 +39,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		423375332F9D0F0E0009F0F9 /* porthole.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = porthole.icon; sourceTree = "<group>"; };
 		8A1000062EF7000000A00001 /* Configurations/DevelopmentTeam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configurations/DevelopmentTeam.xcconfig; sourceTree = "<group>"; };
 		8A1000132EF7000000A00001 /* Porthole.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Porthole.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A1000152EF7000000A00001 /* PortholeWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PortholeWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -108,6 +111,7 @@
 		8A1000012EF7000000A00001 = {
 			isa = PBXGroup;
 			children = (
+				423375332F9D0F0E0009F0F9 /* porthole.icon */,
 				8A1000052EF7000000A00001 /* Configurations */,
 				8A1000082EF7000000A00001 /* Porthole */,
 				8A1000092EF7000000A00001 /* PortholeShared */,
@@ -238,6 +242,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				423375342F9D0F0E0009F0F9 /* porthole.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,6 +250,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				423375352F9D0F0E0009F0F9 /* porthole.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -404,13 +410,14 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8A1000062EF7000000A00001 /* Configurations/DevelopmentTeam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = porthole;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = Porthole/Porthole.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -442,12 +449,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8A1000062EF7000000A00001 /* Configurations/DevelopmentTeam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = porthole;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Porthole/Porthole.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -484,7 +492,7 @@
 				CODE_SIGN_ENTITLEMENTS = PortholeWidget/PortholeWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -519,7 +527,7 @@
 				CODE_SIGN_ENTITLEMENTS = PortholeWidget/PortholeWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;

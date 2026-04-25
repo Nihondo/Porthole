@@ -370,6 +370,24 @@ struct PortholeApp: App {
     }
 }
 
+private struct CheckmarkLabel: View {
+    let title: String
+    let isSelected: Bool
+
+    init(_ title: String, isSelected: Bool) {
+        self.title = title
+        self.isSelected = isSelected
+    }
+
+    var body: some View {
+        if isSelected {
+            Label(title, systemImage: "checkmark")
+        } else {
+            Text(title)
+        }
+    }
+}
+
 private struct MenuBarContentView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.openWindow) private var openWindow
@@ -389,13 +407,7 @@ private struct MenuBarContentView: View {
         }
         .disabled(appState.isCapturingSnapshot || appState.clips.isEmpty)
         Divider()
-        Toggle(
-            L10n.string("menu.launchAtLogin"),
-            isOn: Binding(
-                get: { loginItemManager.isEnabled },
-                set: { loginItemManager.setEnabled($0) }
-            )
-        )
+        loginAtStartupButton
         Divider()
         Button {
             presentAboutPanel()
@@ -414,6 +426,12 @@ private struct MenuBarContentView: View {
         .onChange(of: appState.isSettingsWindowRequested) { _, isRequested in
             guard isRequested else { return }
             openWindow(id: WindowId.settings)
+        }
+    }
+
+    private var loginAtStartupButton: some View {
+        Button { loginItemManager.setEnabled(!loginItemManager.isEnabled) } label: {
+            CheckmarkLabel(L10n.string("menu.launchAtLogin"), isSelected: loginItemManager.isEnabled)
         }
     }
 
