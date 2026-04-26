@@ -12,19 +12,22 @@ struct WebElementSelection {
 
 /// クリップ編集用のプレビューWebViewを管理します。
 @MainActor
-final class WebClipPreviewStore: ObservableObject {
+final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegate {
     let webView: WKWebView
     @Published var loadedURL: URL?
     @Published var isPickingElement = false
+    @Published var scrollOffset = CGPoint.zero
+    @Published var documentSize = CGSize.zero
 
     private var loadedSourceIdentifier: String?
     private var activeLocalAccess: LocalHTMLAccess?
     private var pickerContinuation: CheckedContinuation<WebElementSelection, Error>?
     private var pickerTimeoutTask: Task<Void, Never>?
     private var pickerMessageHandler: WebClipPickerMessageHandler?
+    private var metricsMessageHandler: WebClipMetricsMessageHandler?
     private let schemeHandler: LocalHTMLSchemeHandler
 
-    init() {
+    override init() {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
@@ -34,11 +37,21 @@ final class WebClipPreviewStore: ObservableObject {
         schemeHandler = handler
 
         webView = WKWebView(frame: .zero, configuration: configuration)
+        super.init()
+
         let pickerHandler = WebClipPickerMessageHandler { [weak self] message in
             self?.handlePickerMessage(message)
         }
+        let metricsHandler = WebClipMetricsMessageHandler { [weak self] message in
+            self?.handleMetricsMessage(message)
+        }
         pickerMessageHandler = pickerHandler
+        metricsMessageHandler = metricsHandler
         configuration.userContentController.add(pickerHandler, name: "portholePicker")
+        configuration.userContentController.add(metricsHandler, name: "portholeMetrics")
+        configuration.userContentController.addUserScript(Self.makeMetricsUserScript())
+        webView.navigationDelegate = self
+        refreshScrollMetrics()
     }
 
     deinit {
@@ -58,6 +71,7 @@ final class WebClipPreviewStore: ObservableObject {
             loadedSourceIdentifier = identifier
             loadedURL = url
             webView.load(URLRequest(url: url))
+            refreshScrollMetrics()
         case let .localBookmark(htmlBookmark, accessRootBookmark):
             let access = try LocalHTMLSourceResolver.startAccessing(
                 htmlBookmark: htmlBookmark,
@@ -66,6 +80,7 @@ final class WebClipPreviewStore: ObservableObject {
             let identifier = "local:\(access.source.htmlURL.path):\(access.source.accessRootURL.path)"
             if loadedSourceIdentifier == identifier {
                 access.stopAccessing()
+                refreshScrollMetrics()
                 return
             }
             let htmlData = try Data(contentsOf: access.source.htmlURL)
@@ -80,7 +95,28 @@ final class WebClipPreviewStore: ObservableObject {
             schemeHandler.accessRootURL = access.source.accessRootURL
             let baseURL = URL(string: "\(LocalHTMLSchemeHandler.scheme)://localhost/")
             webView.loadHTMLString(htmlString, baseURL: baseURL)
+            refreshScrollMetrics()
         }
+    }
+
+    /// WebViewのスクロール位置と本文サイズをSwiftUI側へ同期します。
+    func refreshScrollMetrics() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let result = try? await evaluateJavaScript(
+                Self.metricsScript,
+                timeoutSeconds: 2,
+                operationName: "scroll metrics"
+            ) else {
+                applyFallbackScrollMetrics()
+                return
+            }
+            applyScrollMetrics(from: result)
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        refreshScrollMetrics()
     }
 
     /// WebView内でクリックした要素のCSSセレクタを取得します。
@@ -169,8 +205,8 @@ final class WebClipPreviewStore: ObservableObject {
                 const result = {
                     selector: selectorFor(element),
                     rect: {
-                        x: Math.max(0, rect.x),
-                        y: Math.max(0, rect.y),
+                        x: Math.max(0, rect.x + window.scrollX),
+                        y: Math.max(0, rect.y + window.scrollY),
                         width: Math.max(1, rect.width),
                         height: Math.max(1, rect.height)
                     }
@@ -242,6 +278,32 @@ final class WebClipPreviewStore: ObservableObject {
         continuation.resume(with: result)
     }
 
+    private func handleMetricsMessage(_ message: WKScriptMessage) {
+        guard message.name == "portholeMetrics" else { return }
+        applyScrollMetrics(from: message.body)
+    }
+
+    private func applyScrollMetrics(from value: Any?) {
+        guard let values = try? decodeJSONObject(from: value) else {
+            applyFallbackScrollMetrics()
+            return
+        }
+        let x = loadCGFloat(from: values, key: "x") ?? 0
+        let y = loadCGFloat(from: values, key: "y") ?? 0
+        let width = loadCGFloat(from: values, key: "width") ?? webView.bounds.width
+        let height = loadCGFloat(from: values, key: "height") ?? webView.bounds.height
+        scrollOffset = CGPoint(x: x, y: y)
+        documentSize = CGSize(
+            width: max(webView.bounds.width, width),
+            height: max(webView.bounds.height, height)
+        )
+    }
+
+    private func applyFallbackScrollMetrics() {
+        scrollOffset = .zero
+        documentSize = webView.bounds.size
+    }
+
     private func decodeJSONObject(from value: Any?) throws -> [String: Any]? {
         guard let string = value as? String,
               let data = string.data(using: .utf8) else {
@@ -296,10 +358,71 @@ final class WebClipPreviewStore: ObservableObject {
         }
         return nil
     }
+
+    private static var metricsScript: String {
+        """
+        (() => {
+            const root = document.documentElement;
+            const body = document.body;
+            return JSON.stringify({
+                x: window.scrollX || root.scrollLeft || 0,
+                y: window.scrollY || root.scrollTop || 0,
+                width: Math.max(window.innerWidth || 0, root.scrollWidth || 0, body ? body.scrollWidth : 0),
+                height: Math.max(window.innerHeight || 0, root.scrollHeight || 0, body ? body.scrollHeight : 0)
+            });
+        })();
+        """
+    }
+
+    private static func makeMetricsUserScript() -> WKUserScript {
+        WKUserScript(
+            source: """
+            (() => {
+                if (window.__portholeMetricsInstalled) return;
+                window.__portholeMetricsInstalled = true;
+
+                function reportMetrics() {
+                    const root = document.documentElement;
+                    const body = document.body;
+                    const result = {
+                        x: window.scrollX || root.scrollLeft || 0,
+                        y: window.scrollY || root.scrollTop || 0,
+                        width: Math.max(window.innerWidth || 0, root.scrollWidth || 0, body ? body.scrollWidth : 0),
+                        height: Math.max(window.innerHeight || 0, root.scrollHeight || 0, body ? body.scrollHeight : 0)
+                    };
+                    window.webkit.messageHandlers.portholeMetrics.postMessage(JSON.stringify(result));
+                }
+
+                window.addEventListener("scroll", reportMetrics, { passive: true });
+                window.addEventListener("resize", reportMetrics, { passive: true });
+                requestAnimationFrame(reportMetrics);
+                setTimeout(reportMetrics, 250);
+                setTimeout(reportMetrics, 1000);
+            })();
+            """,
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+    }
 }
 
 /// WebViewから要素選択結果を受け取るメッセージハンドラです。
 private final class WebClipPickerMessageHandler: NSObject, WKScriptMessageHandler {
+    private let handleMessage: @MainActor (WKScriptMessage) -> Void
+
+    init(handleMessage: @escaping @MainActor (WKScriptMessage) -> Void) {
+        self.handleMessage = handleMessage
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        Task { @MainActor in
+            handleMessage(message)
+        }
+    }
+}
+
+/// WebViewからスクロール位置と本文サイズを受け取るメッセージハンドラです。
+private final class WebClipMetricsMessageHandler: NSObject, WKScriptMessageHandler {
     private let handleMessage: @MainActor (WKScriptMessage) -> Void
 
     init(handleMessage: @escaping @MainActor (WKScriptMessage) -> Void) {

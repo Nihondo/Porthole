@@ -177,12 +177,10 @@ final class ClipEditorDraft: ObservableObject {
     }
 
     private var normalizedRect: ClipRect {
-        let maxX = max(0, normalizedViewport.width - 1)
-        let maxY = max(0, normalizedViewport.height - 1)
-        let x = min(max(0, clipRect.x), maxX)
-        let y = min(max(0, clipRect.y), maxY)
-        let width = min(max(20, clipRect.width), normalizedViewport.width - x)
-        let height = min(max(20, clipRect.height), normalizedViewport.height - y)
+        let x = max(0, clipRect.x)
+        let y = max(0, clipRect.y)
+        let width = min(max(20, clipRect.width), normalizedViewport.width)
+        let height = min(max(20, clipRect.height), normalizedViewport.height)
         return ClipRect(x: x, y: y, width: width, height: height)
     }
 

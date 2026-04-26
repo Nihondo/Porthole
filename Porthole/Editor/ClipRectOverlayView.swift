@@ -7,6 +7,8 @@ import SwiftUI
 struct ClipRectOverlayView: View {
     @Binding var clipRect: ClipRect
     let viewportSize: CGSize
+    let documentSize: CGSize
+    let scrollOffset: CGPoint
 
     @State private var moveStartRect: ClipRect?
     @State private var resizeStartRect: ClipRect?
@@ -17,11 +19,14 @@ struct ClipRectOverlayView: View {
                 .stroke(.blue, lineWidth: 2)
                 .background(.blue.opacity(0.12))
                 .frame(width: clipRect.width, height: clipRect.height)
-                .position(x: clipRect.x + clipRect.width / 2, y: clipRect.y + clipRect.height / 2)
+                .position(
+                    x: visibleX + clipRect.width / 2,
+                    y: visibleY + clipRect.height / 2
+                )
                 .gesture(moveGesture)
 
             resizeHandle
-                .position(x: clipRect.x + clipRect.width, y: clipRect.y + clipRect.height)
+                .position(x: visibleX + clipRect.width, y: visibleY + clipRect.height)
         }
         .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
@@ -77,11 +82,22 @@ struct ClipRectOverlayView: View {
     }
 
     private func clamp(_ rect: ClipRect) -> ClipRect {
-        let width = min(max(20, rect.width), viewportSize.width)
-        let height = min(max(20, rect.height), viewportSize.height)
-        let x = min(max(0, rect.x), max(0, viewportSize.width - width))
-        let y = min(max(0, rect.y), max(0, viewportSize.height - height))
+        let contentSize = CGSize(
+            width: max(viewportSize.width, documentSize.width),
+            height: max(viewportSize.height, documentSize.height)
+        )
+        let width = min(max(20, rect.width), contentSize.width)
+        let height = min(max(20, rect.height), contentSize.height)
+        let x = min(max(0, rect.x), max(0, contentSize.width - width))
+        let y = min(max(0, rect.y), max(0, contentSize.height - height))
         return ClipRect(x: x, y: y, width: width, height: height)
     }
-}
 
+    private var visibleX: CGFloat {
+        clipRect.x - scrollOffset.x
+    }
+
+    private var visibleY: CGFloat {
+        clipRect.y - scrollOffset.y
+    }
+}

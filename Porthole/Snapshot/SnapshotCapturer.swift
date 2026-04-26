@@ -105,9 +105,7 @@ final class SnapshotCapturer {
     private func resolveSnapshotRect(for clipMode: ClipMode) async throws -> CGRect {
         switch clipMode {
         case let .rect(rect):
-            return clampSnapshotRect(
-                CGRect(x: rect.x, y: rect.y, width: rect.width, height: rect.height)
-            )
+            return try await resolveDocumentRect(rect)
         case let .selector(selector):
             return try await resolveSelectorRect(selector)
         case let .selectorWithFallbackRect(selector, fallbackRect):
@@ -202,7 +200,19 @@ final class SnapshotCapturer {
         try await Task.sleep(nanoseconds: 500_000_000)
     }
 
-    private func scrollToDocumentRect(_ rect: ClipRect) async throws {
+    private func resolveDocumentRect(_ rect: ClipRect) async throws -> CGRect {
+        let scrollOffset = try await scrollToDocumentRect(rect)
+        return clampSnapshotRect(
+            CGRect(
+                x: rect.x - scrollOffset.x,
+                y: rect.y - scrollOffset.y,
+                width: rect.width,
+                height: rect.height
+            )
+        )
+    }
+
+    private func scrollToDocumentRect(_ rect: ClipRect) async throws -> CGPoint {
         let rectJSON = try makeJSONString(["x": Double(rect.x), "y": Double(rect.y)])
         let script = """
         const targetRect = \(rectJSON);
@@ -211,6 +221,20 @@ final class SnapshotCapturer {
         """
         _ = try await evaluateJavaScript(script, timeoutSeconds: 5, operationName: "scroll")
         try await Task.sleep(nanoseconds: 200_000_000)
+        let offsetResult = try await evaluateJavaScript(
+            """
+            JSON.stringify({
+                x: window.scrollX || document.documentElement.scrollLeft || 0,
+                y: window.scrollY || document.documentElement.scrollTop || 0
+            });
+            """,
+            timeoutSeconds: 3,
+            operationName: "scrollOffset"
+        )
+        let values = try decodeJSONObject(from: offsetResult)
+        let x = values.flatMap { loadCGFloat(from: $0, key: "x") } ?? 0
+        let y = values.flatMap { loadCGFloat(from: $0, key: "y") } ?? 0
+        return CGPoint(x: x, y: y)
     }
 
     private func resolveSelectorRect(_ selector: String, fallbackRect: ClipRect? = nil) async throws -> CGRect {
@@ -256,8 +280,7 @@ final class SnapshotCapturer {
         }
 
         if let fallbackRect {
-            try await scrollToDocumentRect(fallbackRect)
-            return CGRect(x: 0, y: 0, width: fallbackRect.width, height: fallbackRect.height)
+            return try await resolveDocumentRect(fallbackRect)
         }
 
         throw SnapshotCaptureError.selectorNotFound(selector)

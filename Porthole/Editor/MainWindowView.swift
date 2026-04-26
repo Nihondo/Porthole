@@ -352,7 +352,12 @@ struct MainWindowView: View {
                         .frame(width: viewportSize.width, height: viewportSize.height)
 
                     if draft.clipMode == .rect {
-                        ClipRectOverlayView(clipRect: $draft.clipRect, viewportSize: viewportSize)
+                        ClipRectOverlayView(
+                            clipRect: $draft.clipRect,
+                            viewportSize: viewportSize,
+                            documentSize: previewStore.documentSize,
+                            scrollOffset: previewStore.scrollOffset
+                        )
                             .allowsHitTesting(true)
                     } else {
                         selectorOverlay
@@ -380,8 +385,8 @@ struct MainWindowView: View {
                 .background((previewStore.isPickingElement ? PortholeTheme.warning : PortholeTheme.accent).opacity(0.12))
                 .frame(width: draft.clipRect.width, height: draft.clipRect.height)
                 .position(
-                    x: draft.clipRect.x + draft.clipRect.width / 2,
-                    y: draft.clipRect.y + draft.clipRect.height / 2
+                    x: visibleClipX + draft.clipRect.width / 2,
+                    y: visibleClipY + draft.clipRect.height / 2
                 )
 
             if previewStore.isPickingElement {
@@ -392,7 +397,7 @@ struct MainWindowView: View {
                     .background(PortholeTheme.warning.opacity(0.9))
                     .foregroundStyle(PortholeTheme.onAccent)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .position(x: draft.clipRect.x + 58, y: max(14, draft.clipRect.y - 12))
+                    .position(x: visibleClipX + 58, y: max(14, visibleClipY - 12))
             }
         }
         .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
@@ -403,6 +408,14 @@ struct MainWindowView: View {
             width: max(320, draft.viewportWidth),
             height: max(240, draft.viewportHeight)
         )
+    }
+
+    private var visibleClipX: CGFloat {
+        draft.clipRect.x - previewStore.scrollOffset.x
+    }
+
+    private var visibleClipY: CGFloat {
+        draft.clipRect.y - previewStore.scrollOffset.y
     }
 
     private func loadSelectedClip() {
@@ -424,6 +437,7 @@ struct MainWindowView: View {
     private func loadPreview() {
         do {
             try previewStore.load(draft.previewSource)
+            previewStore.refreshScrollMetrics()
             draft.validationMessage = nil
         } catch {
             draft.validationMessage = error.localizedDescription
@@ -566,8 +580,10 @@ private struct ClipSidebarRow: View {
 
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? PortholeTheme.cardBackground : Color.clear)
