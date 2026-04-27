@@ -10,8 +10,10 @@ struct ClipRectOverlayView: View {
     let documentSize: CGSize
     let scrollOffset: CGPoint
 
-    @State private var moveStartRect: ClipRect?
-    @State private var resizeStartRect: ClipRect?
+    @State private var moveStart: OverlayDragStart?
+    @State private var resizeStart: ResizeDragStart?
+
+    private static let coordinateSpaceName = "clipRectOverlay"
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -29,6 +31,7 @@ struct ClipRectOverlayView: View {
                 .position(x: visibleX + clipRect.width, y: visibleY + clipRect.height)
         }
         .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+        .coordinateSpace(name: Self.coordinateSpaceName)
     }
 
     private var resizeHandle: some View {
@@ -40,44 +43,67 @@ struct ClipRectOverlayView: View {
     }
 
     private var moveGesture: some Gesture {
-        DragGesture()
+        DragGesture(coordinateSpace: .named(Self.coordinateSpaceName))
             .onChanged { value in
-                if moveStartRect == nil {
-                    moveStartRect = clipRect
+                if moveStart == nil {
+                    moveStart = OverlayDragStart(rect: clipRect, location: value.location)
                 }
-                guard let startRect = moveStartRect else { return }
+                guard let moveStart else { return }
+                let delta = CGSize(
+                    width: value.location.x - moveStart.location.x,
+                    height: value.location.y - moveStart.location.y
+                )
                 clipRect = clamp(
                     ClipRect(
-                        x: startRect.x + value.translation.width,
-                        y: startRect.y + value.translation.height,
-                        width: startRect.width,
-                        height: startRect.height
+                        x: moveStart.rect.x + delta.width,
+                        y: moveStart.rect.y + delta.height,
+                        width: moveStart.rect.width,
+                        height: moveStart.rect.height
                     )
                 )
             }
             .onEnded { _ in
-                moveStartRect = nil
+                moveStart = nil
             }
     }
 
     private var resizeGesture: some Gesture {
-        DragGesture()
+        DragGesture(coordinateSpace: .named(Self.coordinateSpaceName))
             .onChanged { value in
-                if resizeStartRect == nil {
-                    resizeStartRect = clipRect
+                if resizeStart == nil {
+                    let handleCenter = CGPoint(
+                        x: visibleX + clipRect.width,
+                        y: visibleY + clipRect.height
+                    )
+                    resizeStart = ResizeDragStart(
+                        rect: clipRect,
+                        handleOffset: CGSize(
+                            width: value.location.x - handleCenter.x,
+                            height: value.location.y - handleCenter.y
+                        ),
+                        scrollOffset: scrollOffset
+                    )
                 }
-                guard let startRect = resizeStartRect else { return }
+                guard let resizeStart else { return }
+                let handleCenter = CGPoint(
+                    x: value.location.x - resizeStart.handleOffset.width,
+                    y: value.location.y - resizeStart.handleOffset.height
+                )
+                let documentHandle = CGPoint(
+                    x: handleCenter.x + resizeStart.scrollOffset.x,
+                    y: handleCenter.y + resizeStart.scrollOffset.y
+                )
                 clipRect = clamp(
                     ClipRect(
-                        x: startRect.x,
-                        y: startRect.y,
-                        width: startRect.width + value.translation.width,
-                        height: startRect.height + value.translation.height
+                        x: resizeStart.rect.x,
+                        y: resizeStart.rect.y,
+                        width: documentHandle.x - resizeStart.rect.x,
+                        height: documentHandle.y - resizeStart.rect.y
                     )
                 )
             }
             .onEnded { _ in
-                resizeStartRect = nil
+                resizeStart = nil
             }
     }
 
@@ -100,4 +126,15 @@ struct ClipRectOverlayView: View {
     private var visibleY: CGFloat {
         clipRect.y - scrollOffset.y
     }
+}
+
+private struct OverlayDragStart {
+    let rect: ClipRect
+    let location: CGPoint
+}
+
+private struct ResizeDragStart {
+    let rect: ClipRect
+    let handleOffset: CGSize
+    let scrollOffset: CGPoint
 }
