@@ -447,7 +447,7 @@ final class SnapshotCapturer {
 
     private func saveFamilySnapshots(from image: NSImage, clipId: UUID) throws {
         for family in SnapshotFamily.allCases {
-            let resizedImage = image.resizedToFill(targetSize: family.pointSize)
+            let resizedImage = image.resizedToFit(maxSize: family.pointSize)
             guard let data = resizedImage.pngData else {
                 throw SnapshotCaptureError.pngEncodingFailed
             }
@@ -689,27 +689,16 @@ private extension NSImage {
         return bitmap.representation(using: .png, properties: [:])
     }
 
-    func resizedToFill(targetSize: CGSize) -> NSImage {
-        let image = NSImage(size: targetSize)
-        image.lockFocus()
-
-        let drawRect = makeAspectFillRect(sourceSize: size, targetSize: targetSize)
-        draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: 1)
-        image.unlockFocus()
-        return image
-    }
-
-    private func makeAspectFillRect(sourceSize: CGSize, targetSize: CGSize) -> CGRect {
-        let widthScale = targetSize.width / max(sourceSize.width, 1)
-        let heightScale = targetSize.height / max(sourceSize.height, 1)
-        let scale = max(widthScale, heightScale)
-        let scaledSize = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
-        return CGRect(
-            x: (targetSize.width - scaledSize.width) / 2,
-            y: (targetSize.height - scaledSize.height) / 2,
-            width: scaledSize.width,
-            height: scaledSize.height
-        )
+    func resizedToFit(maxSize: CGSize) -> NSImage {
+        let widthScale = maxSize.width / max(size.width, 1)
+        let heightScale = maxSize.height / max(size.height, 1)
+        let scale = min(widthScale, heightScale)
+        let scaledSize = CGSize(width: round(size.width * scale), height: round(size.height * scale))
+        let result = NSImage(size: scaledSize)
+        result.lockFocus()
+        draw(in: CGRect(origin: .zero, size: scaledSize), from: .zero, operation: .sourceOver, fraction: 1)
+        result.unlockFocus()
+        return result
     }
 }
 
