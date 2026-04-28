@@ -80,7 +80,7 @@ Add a **Web Clip** widget in Notification Center (macOS Notification Center → 
 - Tap the widget configuration to choose which clip to display.
 - A remote URL clip opens the source page in the default browser when clicked.
 - The widget shows a placeholder when no snapshot has been captured yet.
-- The full selected region is fitted inside the widget image, so wide or tall clips may show padding instead of being cropped.
+- The snapshot fills the widget area. Wide or tall clips are center-cropped instead of padded.
 - The widget background uses a representative color sampled from the snapshot edges.
 - The timeline refreshes at the interval configured for the selected clip.
 

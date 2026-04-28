@@ -447,7 +447,7 @@ final class SnapshotCapturer {
 
     private func saveFamilySnapshots(from image: NSImage, clipId: UUID) throws {
         for family in SnapshotFamily.allCases {
-            let resizedImage = image.resized(to: family.pointSize)
+            let resizedImage = image.resizedToFill(targetSize: family.pointSize)
             guard let data = resizedImage.pngData else {
                 throw SnapshotCaptureError.pngEncodingFailed
             }
@@ -689,22 +689,20 @@ private extension NSImage {
         return bitmap.representation(using: .png, properties: [:])
     }
 
-    func resized(to targetSize: CGSize) -> NSImage {
+    func resizedToFill(targetSize: CGSize) -> NSImage {
         let image = NSImage(size: targetSize)
         image.lockFocus()
-        NSColor.windowBackgroundColor.setFill()
-        NSRect(origin: .zero, size: targetSize).fill()
 
-        let drawRect = makeAspectFitRect(sourceSize: size, targetSize: targetSize)
+        let drawRect = makeAspectFillRect(sourceSize: size, targetSize: targetSize)
         draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: 1)
         image.unlockFocus()
         return image
     }
 
-    private func makeAspectFitRect(sourceSize: CGSize, targetSize: CGSize) -> CGRect {
+    private func makeAspectFillRect(sourceSize: CGSize, targetSize: CGSize) -> CGRect {
         let widthScale = targetSize.width / max(sourceSize.width, 1)
         let heightScale = targetSize.height / max(sourceSize.height, 1)
-        let scale = min(widthScale, heightScale)
+        let scale = max(widthScale, heightScale)
         let scaledSize = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
         return CGRect(
             x: (targetSize.width - scaledSize.width) / 2,
