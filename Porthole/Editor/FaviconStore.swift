@@ -22,7 +22,8 @@ final class FaviconStore: ObservableObject {
             return image
         }
         if let cachedImage = loadCachedImage(for: cacheKey) {
-            imageCache[cacheKey] = cachedImage
+            // ビューアップデート中の @Published 変更を避けるため次サイクルに遅延
+            Task { @MainActor in imageCache[cacheKey] = cachedImage }
             return cachedImage
         }
         fetchFavicon(from: faviconURL, cacheKey: cacheKey)

@@ -52,6 +52,7 @@ final class ClipEditorDraft: ObservableObject {
     @Published var viewportWidth = 1200.0
     @Published var viewportHeight = 900.0
     @Published var refreshSeconds = 1800.0
+    @Published var captureDelaySeconds = 0.0
     @Published var clipMode: EditorClipMode = .rect
     @Published var clipRect = ClipRect(x: 0, y: 0, width: 338, height: 158)
     @Published var selector = ""
@@ -81,6 +82,7 @@ final class ClipEditorDraft: ObservableObject {
         viewportWidth = clip.renderViewport.width
         viewportHeight = clip.renderViewport.height
         refreshSeconds = clip.refreshSeconds
+        captureDelaySeconds = clip.captureDelaySeconds
         clipMode = clip.editorClipMode
         clipRect = clip.rectClip ?? ClipRect(x: 0, y: 0, width: 338, height: 158)
         selector = clip.selectorValue ?? ""
@@ -108,6 +110,7 @@ final class ClipEditorDraft: ObservableObject {
             clipMode: normalizedClipMode,
             renderViewport: normalizedViewport,
             refreshSeconds: max(30, refreshSeconds),
+            captureDelaySeconds: max(0, captureDelaySeconds),
             lastUpdated: lastUpdated
         )
     }

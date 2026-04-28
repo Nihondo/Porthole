@@ -55,6 +55,7 @@
 "editor.field.selector" = "セレクタ";
 "editor.field.viewportWidth" = "Viewport 幅";
 "editor.field.viewportHeight" = "Viewport 高さ";
+"editor.field.captureDelay" = "撮影遅延";
 "editor.field.rectX" = "X";
 "editor.field.rectY" = "Y";
 "editor.field.rectWidth" = "幅";

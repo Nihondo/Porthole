@@ -55,6 +55,7 @@
 "editor.field.selector" = "Selector";
 "editor.field.viewportWidth" = "Viewport Width";
 "editor.field.viewportHeight" = "Viewport Height";
+"editor.field.captureDelay" = "Capture Delay";
 "editor.field.rectX" = "X";
 "editor.field.rectY" = "Y";
 "editor.field.rectWidth" = "Width";

@@ -41,6 +41,7 @@ Porthole is a macOS menu bar app that captures a region of any web page or local
 | Field | Description |
 |---|---|
 | **Viewport Width / Height** | Browser viewport size used when rendering the page |
+| **Capture Delay** | Seconds to wait after the page finishes loading before taking the snapshot. Use this to skip loading placeholders on pages that render content asynchronously (default: 0) |
 
 ### Clipping
 | Field | Description |

@@ -56,6 +56,9 @@ final class SnapshotCapturer {
         }
         try await waitForCompleteDocument()
         try await waitForRenderableContent()
+        if clip.captureDelaySeconds > 0 {
+            try await Task.sleep(nanoseconds: UInt64(clip.captureDelaySeconds * 1_000_000_000))
+        }
 
         let snapshotRect = try await resolveSnapshotRect(for: clip.clipMode)
         let scaleFactor = try await loadDevicePixelRatio()

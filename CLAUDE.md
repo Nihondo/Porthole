@@ -13,13 +13,13 @@ The project is at the M9 localization and polish stage:
 - URL scheme: `porthole://`
 - The app seeds a sample remote clip on first launch.
 - The settings window supports adding, deleting, selecting, editing, and saving multiple clips.
-- Editable fields include name, source, render viewport, refresh interval, rectangular clip coordinates, and CSS selector.
+- Editable fields include name, source, render viewport, refresh interval, capture delay, rectangular clip coordinates, and CSS selector.
 - Sources can be remote URLs or local HTML files selected through `NSOpenPanel`.
 - Local HTML clips store security-scoped bookmarks for the HTML file and read-access root.
 - The editor embeds a `WKWebView` preview with a draggable/resizable rectangle overlay and a click-to-select element picker.
 - Selector clips are saved as `.selectorWithFallbackRect`, preserving the current rectangle as fallback.
 - The menu bar includes Settings, Refresh Clip, Open at Login, About, and Quit.
-- `SnapshotCapturer` loads remote clips with `URLRequest` and local HTML clips with `WKWebView.loadFileURL(_:allowingReadAccessTo:)`, captures the configured rect, writes small / medium / large PNGs, updates `lastUpdated`, and reloads widget timelines.
+- `SnapshotCapturer` loads remote clips with `URLRequest` and local HTML clips with `WKWebView.loadFileURL(_:allowingReadAccessTo:)`, waits for document readiness and render completion, then applies `captureDelaySeconds` (if > 0) before capturing the configured rect, writes small / medium / large PNGs, updates `lastUpdated`, and reloads widget timelines.
 - Family snapshot PNGs use aspect-fill scaling so the widget image is filled without padding, with center cropping when aspect ratios differ.
 - `RefreshScheduler` schedules the next due clip from `lastUpdated + refreshSeconds` while the app is running.
 - The app captures stale clips on launch and after `NSWorkspace.didWakeNotification`.

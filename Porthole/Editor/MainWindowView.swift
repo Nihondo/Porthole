@@ -260,9 +260,21 @@ struct MainWindowView: View {
                 }
 
                 SettingsCard(title: L10n.string("editor.section.rendering"), systemImage: "display") {
-                    HStack(spacing: 10) {
-                        MetricField(title: L10n.string("editor.field.viewportWidth"), value: $draft.viewportWidth)
-                        MetricField(title: L10n.string("editor.field.viewportHeight"), value: $draft.viewportHeight)
+                    VStack(spacing: 12) {
+                        HStack(spacing: 10) {
+                            MetricField(title: L10n.string("editor.field.viewportWidth"), value: $draft.viewportWidth)
+                            MetricField(title: L10n.string("editor.field.viewportHeight"), value: $draft.viewportHeight)
+                        }
+
+                        FieldRow(L10n.string("editor.field.captureDelay")) {
+                            HStack(spacing: 8) {
+                                TextField(L10n.string("editor.seconds"), value: $draft.captureDelaySeconds, formatter: Self.integerFormatter)
+                                    .textFieldStyle(.roundedBorder)
+                                Text(L10n.string("editor.seconds"))
+                                    .font(.caption)
+                                    .foregroundStyle(PortholeTheme.muted)
+                            }
+                        }
                     }
                 }
 
