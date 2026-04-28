@@ -201,22 +201,74 @@ final class SnapshotCapturer {
     }
 
     private func resolveDocumentRect(_ rect: ClipRect) async throws -> CGRect {
-        let scrollOffset = try await scrollToDocumentRect(rect)
+        let documentRect = CGRect(x: rect.x, y: rect.y, width: rect.width, height: rect.height)
+        return try await resolveVisibleDocumentRect(documentRect)
+    }
+
+    private func resolveVisibleDocumentRect(_ documentRect: CGRect) async throws -> CGRect {
+        let scrollOffset = try await scrollToRevealDocumentRect(documentRect)
         return clampSnapshotRect(
             CGRect(
-                x: rect.x - scrollOffset.x,
-                y: rect.y - scrollOffset.y,
-                width: rect.width,
-                height: rect.height
+                x: documentRect.minX - scrollOffset.x,
+                y: documentRect.minY - scrollOffset.y,
+                width: documentRect.width,
+                height: documentRect.height
             )
         )
     }
 
-    private func scrollToDocumentRect(_ rect: ClipRect) async throws -> CGPoint {
-        let rectJSON = try makeJSONString(["x": Double(rect.x), "y": Double(rect.y)])
+    private func scrollToRevealDocumentRect(_ rect: CGRect) async throws -> CGPoint {
+        let rectJSON = try makeJSONString([
+            "x": Double(rect.minX),
+            "y": Double(rect.minY),
+            "width": Double(rect.width),
+            "height": Double(rect.height)
+        ])
         let script = """
         const targetRect = \(rectJSON);
-        window.scrollTo(targetRect.x, targetRect.y);
+        const root = document.documentElement;
+        const body = document.body;
+        const viewportWidth = window.innerWidth || root.clientWidth || targetRect.width;
+        const viewportHeight = window.innerHeight || root.clientHeight || targetRect.height;
+        const currentX = window.scrollX || root.scrollLeft || 0;
+        const currentY = window.scrollY || root.scrollTop || 0;
+        const maxScrollX = Math.max(
+            0,
+            (root.scrollWidth || 0) - viewportWidth,
+            body ? (body.scrollWidth || 0) - viewportWidth : 0
+        );
+        const maxScrollY = Math.max(
+            0,
+            (root.scrollHeight || 0) - viewportHeight,
+            body ? (body.scrollHeight || 0) - viewportHeight : 0
+        );
+
+        function revealStart(minValue, maxValue, currentValue, viewportLength, maxScrollValue) {
+            if (minValue < currentValue) {
+                return Math.min(Math.max(0, minValue), maxScrollValue);
+            }
+            if (maxValue > currentValue + viewportLength) {
+                return Math.min(Math.max(0, maxValue - viewportLength), maxScrollValue);
+            }
+            return Math.min(Math.max(0, currentValue), maxScrollValue);
+        }
+
+        const nextX = revealStart(
+            targetRect.x,
+            targetRect.x + targetRect.width,
+            currentX,
+            viewportWidth,
+            maxScrollX
+        );
+        const nextY = revealStart(
+            targetRect.y,
+            targetRect.y + targetRect.height,
+            currentY,
+            viewportHeight,
+            maxScrollY
+        );
+
+        window.scrollTo(nextX, nextY);
         true;
         """
         _ = try await evaluateJavaScript(script, timeoutSeconds: 5, operationName: "scroll")
@@ -246,29 +298,15 @@ final class SnapshotCapturer {
             if (!element) {
                 return null;
             }
-            element.scrollIntoView({ block: "start", inline: "start" });
             const rect = element.getBoundingClientRect();
             return JSON.stringify({
-                x: Math.max(0, rect.x),
-                y: Math.max(0, rect.y),
+                x: Math.max(0, rect.x + window.scrollX),
+                y: Math.max(0, rect.y + window.scrollY),
                 width: Math.max(1, rect.width),
                 height: Math.max(1, rect.height)
             });
         })();
         """
-        _ = try await evaluateJavaScript(
-            """
-            (() => {
-                const element = document.querySelector(\(selectorJSON));
-                if (!element) return false;
-                element.scrollIntoView({ block: "start", inline: "start" });
-                return true;
-            })();
-            """,
-            timeoutSeconds: 5,
-            operationName: "selectorScroll"
-        )
-        try await forceLayoutAndPaint()
         let result = try await evaluateJavaScript(script, timeoutSeconds: 5, operationName: "selector")
 
         if let values = try decodeJSONObject(from: result),
@@ -276,7 +314,8 @@ final class SnapshotCapturer {
            let height = loadCGFloat(from: values, key: "height") {
             let x = loadCGFloat(from: values, key: "x") ?? 0
             let y = loadCGFloat(from: values, key: "y") ?? 0
-            return CGRect(x: x, y: y, width: width, height: height)
+            let documentRect = CGRect(x: x, y: y, width: width, height: height)
+            return try await resolveVisibleDocumentRect(documentRect)
         }
 
         if let fallbackRect {
