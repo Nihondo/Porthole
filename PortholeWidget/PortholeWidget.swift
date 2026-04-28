@@ -98,7 +98,9 @@ struct PortholeWidgetView: View {
                     .padding(.vertical, 4)
                     .background(.black.opacity(0.55))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .padding(6)
+                    .padding(.leading, 2)
+                    .padding(.bottom, 2)
+                    .padding([.top, .trailing], 6)
             }
         } else {
             placeholderView
