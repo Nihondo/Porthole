@@ -19,6 +19,7 @@ struct MainWindowView: View {
     @StateObject private var draft = ClipEditorDraft()
     @StateObject private var faviconStore = FaviconStore()
     @StateObject private var previewStore = WebClipPreviewStore()
+    @State private var selectorResolutionTask: Task<Void, Never>?
 
     private var selectedClip: Clip? {
         appState.clips.first { $0.id == appState.selectedClipId } ?? appState.clips.first
@@ -40,6 +41,16 @@ struct MainWindowView: View {
         }
         .onChange(of: appState.clips) { _, _ in
             reloadIfSelectionDisappeared()
+        }
+        .onChange(of: draft.selector) { _, _ in
+            refreshSelectorOverlayRect()
+        }
+        .onChange(of: draft.clipMode) { _, _ in
+            refreshSelectorOverlayRect()
+        }
+        .onDisappear {
+            selectorResolutionTask?.cancel()
+            selectorResolutionTask = nil
         }
     }
 
@@ -419,6 +430,8 @@ struct MainWindowView: View {
     }
 
     private func loadSelectedClip() {
+        selectorResolutionTask?.cancel()
+        selectorResolutionTask = nil
         draft.load(from: selectedClip)
         loadPreview()
     }
@@ -439,8 +452,35 @@ struct MainWindowView: View {
             try previewStore.load(draft.previewSource)
             previewStore.refreshScrollMetrics()
             draft.validationMessage = nil
+            refreshSelectorOverlayRect()
         } catch {
             draft.validationMessage = error.localizedDescription
+        }
+    }
+
+    private func refreshSelectorOverlayRect() {
+        selectorResolutionTask?.cancel()
+        selectorResolutionTask = nil
+
+        guard draft.clipMode == .selector else { return }
+        guard draft.previewSource != nil else { return }
+
+        let selector = draft.selector.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selector.isEmpty else { return }
+
+        let clipId = draft.clipId
+        let originalRect = draft.clipRect
+        selectorResolutionTask = Task { @MainActor in
+            guard let rect = await previewStore.resolveSelectorRect(for: selector) else { return }
+            guard !Task.isCancelled else { return }
+            guard draft.clipId == clipId,
+                  draft.clipMode == .selector,
+                  draft.selector.trimmingCharacters(in: .whitespacesAndNewlines) == selector,
+                  draft.clipRect == originalRect else {
+                return
+            }
+            draft.clipRect = rect
+            previewStore.refreshScrollMetrics()
         }
     }
 

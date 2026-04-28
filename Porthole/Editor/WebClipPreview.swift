@@ -70,6 +70,7 @@ final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegat
             activeLocalAccess = nil
             loadedSourceIdentifier = identifier
             loadedURL = url
+            resetScrollMetrics()
             webView.load(URLRequest(url: url))
             refreshScrollMetrics()
         case let .localBookmark(htmlBookmark, accessRootBookmark):
@@ -94,9 +95,50 @@ final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegat
             loadedURL = access.source.htmlURL
             schemeHandler.accessRootURL = access.source.accessRootURL
             let baseURL = URL(string: "\(LocalHTMLSchemeHandler.scheme)://localhost/")
+            resetScrollMetrics()
             webView.loadHTMLString(htmlString, baseURL: baseURL)
             refreshScrollMetrics()
         }
+    }
+
+    /// 指定されたセレクタに一致する現在の要素矩形をページ全体の座標で返します。
+    func resolveSelectorRect(for selector: String) async -> ClipRect? {
+        let selector = selector.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selector.isEmpty, let selectorJSON = makeJSONString(selector) else { return nil }
+
+        await waitForCurrentLoadToSettle(timeoutSeconds: 5)
+
+        let script = """
+        (() => {
+            const selectorValue = \(selectorJSON);
+            const element = document.querySelector(selectorValue);
+            if (!element) {
+                return null;
+            }
+            const rect = element.getBoundingClientRect();
+            return JSON.stringify({
+                x: Math.max(0, rect.x + window.scrollX),
+                y: Math.max(0, rect.y + window.scrollY),
+                width: Math.max(1, rect.width),
+                height: Math.max(1, rect.height)
+            });
+        })();
+        """
+
+        for _ in 0..<20 {
+            if Task.isCancelled { return nil }
+            if let result = try? await evaluateJavaScript(
+                script,
+                timeoutSeconds: 2,
+                operationName: "selector preview"
+            ),
+                let values = try? decodeJSONObject(from: result),
+                let rect = makeClipRect(from: values) {
+                return rect
+            }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+        return nil
     }
 
     /// WebViewのスクロール位置と本文サイズをSwiftUI側へ同期します。
@@ -270,6 +312,14 @@ final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegat
         finishPicker(with: .success(WebElementSelection(selector: selector, rect: rect)))
     }
 
+    private func waitForCurrentLoadToSettle(timeoutSeconds: TimeInterval) async {
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while webView.isLoading && Date() < deadline {
+            if Task.isCancelled { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+    }
+
     private func finishPicker(with result: Result<WebElementSelection, Error>) {
         guard let continuation = pickerContinuation else { return }
         pickerContinuation = nil
@@ -297,6 +347,11 @@ final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegat
             width: max(webView.bounds.width, width),
             height: max(webView.bounds.height, height)
         )
+    }
+
+    private func resetScrollMetrics() {
+        scrollOffset = .zero
+        documentSize = webView.bounds.size
     }
 
     private func applyFallbackScrollMetrics() {
@@ -347,6 +402,13 @@ final class WebClipPreviewStore: NSObject, ObservableObject, WKNavigationDelegat
             return nil
         }
         return ClipRect(x: x, y: y, width: width, height: height)
+    }
+
+    private func makeJSONString(_ value: Any) -> String? {
+        guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
     }
 
     private func loadCGFloat(from values: [String: Any], key: String) -> CGFloat? {

@@ -695,16 +695,16 @@ private extension NSImage {
         NSColor.windowBackgroundColor.setFill()
         NSRect(origin: .zero, size: targetSize).fill()
 
-        let drawRect = makeAspectFillRect(sourceSize: size, targetSize: targetSize)
+        let drawRect = makeAspectFitRect(sourceSize: size, targetSize: targetSize)
         draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: 1)
         image.unlockFocus()
         return image
     }
 
-    private func makeAspectFillRect(sourceSize: CGSize, targetSize: CGSize) -> CGRect {
+    private func makeAspectFitRect(sourceSize: CGSize, targetSize: CGSize) -> CGRect {
         let widthScale = targetSize.width / max(sourceSize.width, 1)
         let heightScale = targetSize.height / max(sourceSize.height, 1)
-        let scale = max(widthScale, heightScale)
+        let scale = min(widthScale, heightScale)
         let scaledSize = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
         return CGRect(
             x: (targetSize.width - scaledSize.width) / 2,

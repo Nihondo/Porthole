@@ -86,9 +86,8 @@ struct PortholeWidgetView: View {
             ZStack(alignment: .bottomLeading) {
                 Image(nsImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
 
                 Text(entry.clipName ?? L10n.string("widget.defaultClipName"))
                     .font(.caption2)

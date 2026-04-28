@@ -20,6 +20,7 @@ The project is at the M9 localization and polish stage:
 - Selector clips are saved as `.selectorWithFallbackRect`, preserving the current rectangle as fallback.
 - The menu bar includes Settings, Refresh Clip, Open at Login, About, and Quit.
 - `SnapshotCapturer` loads remote clips with `URLRequest` and local HTML clips with `WKWebView.loadFileURL(_:allowingReadAccessTo:)`, captures the configured rect, writes small / medium / large PNGs, updates `lastUpdated`, and reloads widget timelines.
+- Family snapshot PNGs use aspect-fit scaling so the full selected clip region remains visible inside the widget image, with padding when aspect ratios differ.
 - `RefreshScheduler` schedules the next due clip from `lastUpdated + refreshSeconds` while the app is running.
 - The app captures stale clips on launch and after `NSWorkspace.didWakeNotification`.
 - `SelectClipIntent` and `ClipEntity` expose `ClipStore` clips to WidgetKit configuration.
