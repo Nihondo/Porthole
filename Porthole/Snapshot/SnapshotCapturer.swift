@@ -35,6 +35,8 @@ final class SnapshotCapturer {
         )
         hostWindow.isReleasedWhenClosed = false
         hostWindow.backgroundColor = .clear
+        // Mission Control・Exposé・Cmd+` の対象から除外し、スペース切替時も移動しない
+        hostWindow.collectionBehavior = [.stationary, .ignoresCycle]
         hostWindow.contentView = NSView(frame: hostWindow.contentRect(forFrameRect: hostWindow.frame))
         hostWindow.contentView?.addSubview(webView)
     }
