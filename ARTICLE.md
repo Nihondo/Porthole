@@ -99,7 +99,7 @@ WebViewをオフスクリーンウィンドウに乗せないと`takeSnapshot`�
 
 ### ローカルHTMLのカスタムURLスキーム
 
-サンドボックス環境ではローカルHTMLを`file://`で直接ロードすると相対パス参照が制限される。そのため、`WKURLSchemeHandler`を独自実装した`LocalHTMLSchemeHandler`を挟み、`localhtml://localhost/`というカスタムスキームでコンテンツを配信している。セキュリティスコープブックマークで解決したファイルアクセス権は、このハンドラ内で使用する。
+サンドボックス環境ではローカルHTMLを`file://`で直接ロードすると相対パス参照が制限される。そのため、`WKURLSchemeHandler`を独自実装した`LocalHTMLSchemeHandler`を挟み、`porthole-local://localhost/`というカスタムスキームでコンテンツを配信している。セキュリティスコープブックマークで解決したファイルアクセス権は、このハンドラ内で使用する。
 
 ### CSSセレクタによるクリップ
 
