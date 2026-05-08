@@ -6,14 +6,14 @@ macOSの通知センターウィジェットに「Webページの一部」をそ
 
 ---
 
-## 全体像：3ターゲット構成
+## 全体像：2ターゲット＋共有ソース
 
-Portholeは3つのビルドターゲットで構成されている。
+Portholeは2つのビルドターゲットと、両ターゲットにコンパイルされる共有Swiftソース群で構成されている。
 
 ```
-Porthole          ← メニューバーアプリ（キャプチャ担当）
-PortholeShared    ← アプリとウィジェットで共有するSwiftファイル群
-PortholeWidget    ← WidgetKit拡張（表示担当）
+Porthole                ← メニューバーアプリ（キャプチャ担当）
+PortholeWidgetExtension ← WidgetKit拡張（表示担当）
+PortholeShared/         ← 共有Swiftソース群（独立したターゲットではない）
 ```
 
 アプリとウィジェットはプロセスが分離されているため、データの受け渡しにはApp Group（`group.com.dmng.porthole`）を使う。アプリがキャプチャした画像をApp Groupコンテナに書き込み、ウィジェットがそれを読み出して描画する、という一方通行の設計だ。
@@ -55,7 +55,7 @@ enum ClipMode: Codable, Hashable {
 
 ローカルHTMLはセキュリティスコープブックマーク（`Data`）として保存するため、アプリを再起動してもファイルを再選択せずに読み込める。
 
-クリップ一覧はApp Group内の `registry.json` に保存する。`ClipStore`がその読み書きを担い、`JSONEncoder/JSONDecoder`でアトミックに永続化する。アプリとウィジェット拡張の両方が同じ`ClipStore`実装を参照するので、`PortholeShared`ターゲットに置いている。
+クリップ一覧はApp Group内の `registry.json` に保存する。`ClipStore`がその読み書きを担い、`JSONEncoder/JSONDecoder`でアトミックに永続化する。アプリとウィジェット拡張の両方が同じ`ClipStore`実装を参照するので、`PortholeShared`（共有Swiftソース）に置いている。
 
 ---
 
